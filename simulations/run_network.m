@@ -1,14 +1,13 @@
 
-masterPath = 'E:\Research_Projects\004_Propofol\Modelling\neuron_simulations\data\simulations\dyad_dipole_correlation\run0';
-cons = csvread('E:\Research_Projects\004_Propofol\Modelling\neuron_simulations\data\simulations\dyads0\t=100\presynaptic_network\preConnections.csv');
-load('E:\Research_Projects\004_Propofol\Modelling\neuron_simulations\data\simulations\dyads\s=0\data.mat');
+cons = csvread('E:\Research_Projects\004_Propofol\data\simulations\raw\dyads\s=0\presynaptic_network\preConnections.csv');
+
+load('E:\Research_Projects\004_Propofol\data\simulations\raw\dyads\s=0\data.mat');
 i = 0;
-for m = [0.25,0.5,0.75,0.9,0.95,0.98,0.99,0.999];
+for m = [0,0.25,0.5,0.75,0.9,0.95,0.98,0.99,0.999];
     for k = 0:9
-        newRunPath = ['E:\Research_Projects\004_Propofol\Modelling\neuron_simulations\data\simulations\dyad_network_criticality\m=' num2str(m,3) '\run' int2str(k)];
+        newRunPath = ['E:\Research_Projects\004_Propofol\data\simulations\raw\dyad_network_criticality\m=' num2str(m,3) '\run' int2str(k)];
         fdr2 = ['s=' num2str(i,2)];
         masterPath3 = fullfile(newRunPath,fdr2);
-        load(fullfile(masterPath,'s=0','data.mat'));
         network2 = network.copy_network(masterPath3);
         N = network.getsynapsecount;
         [ids,ts,ei] = simulatespikes_det(N,m,network.tmax*1e-3,cons);

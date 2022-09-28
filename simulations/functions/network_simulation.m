@@ -17,11 +17,12 @@ classdef network_simulation
     end
 
     properties (Access = private)
-        morphologyPath = 'E:/Research_Projects/004_Propofol/Modelling/neuron_simulations/data/cortical_column_Hagen/swc/';
-        simulateFunction = 'E:/Research_Projects/004_Propofol/Modelling/neuron_simulations/code/compute_network_dipoles.py';
-        correlationFunction = 'E:\Research_Projects\004_Propofol\Modelling\neuron_simulations\code\compute_correlation_matrix.exe';
-        mTypeSegmentationData = 'E:\Research_Projects\004_Propofol\Modelling\neuron_simulations\data\cortical_column_Hagen\segment_areas.mat';
+        morphologyPath = 'E:/Research_Projects/004_Propofol/data/resources/cortical_column_Hagen/swc';
+        simulateFunction = 'C:/Users/brake/Documents/GitHub/aperiodic_EEG_modelling/simulations/functions/compute_network_dipoles.py';
+        correlationFunction = 'C:/Users/brake/Documents/GitHub/aperiodic_EEG_modelling/simulations/functions/compute_correlation_matrix.exe';
+        mTypeSegmentationData = 'E:\Research_Projects\004_Propofol\data\resources\cortical_column_Hagen\segment_areas.mat';
         neuronTypes = {'L23E_oi24rpy1';'L23I_oi38lbc1';'L23I_oi38lbc1';'L4E_53rpy1';'L4E_j7_L4stellate';'L4E_j7_L4stellate';'L4I_oi26rbc1';'L4I_oi26rbc1';'L5E_oi15rpy4';'L5E_j4a';'L5I_oi15rbc1';'L5I_oi15rbc1';'L6E_51_2a_CNG';'L6E_oi15rpy4';'L6I_oi15rbc1';'L6I_oi15rbc1'};
+        embeddingFunction = 'C:/Users/brake/Documents/GitHub/aperiodic_EEG_modelling/simulations/functions/embed_data.py'
         nrnAbundance = [26.8,3.2,4.3,9.5,9.5,9.5,5.6,1.5,4.9,1.3,0.6,0.8,14,4.6,1.9,1.9]/100
         dendriteLengths = [9319,4750,4750,7169,4320,4320,2359,2359,14247,5720,5134,5134,5666,6183,5134,5134];
         samplingFrequency = 16000
@@ -228,7 +229,7 @@ classdef network_simulation
 
             % Run UMAP using python module
             % Haversine metric allows embedding data onto a sphere
-            pyFun = 'E:\Research_Projects\004_Propofol\Modelling\neuron_simulations\code\embed_data.py';
+            pyFun = obj.embeddingFunction;
             umapFile = fullfile(obj.preNetwork,'UMAP_embedding.csv');
             if(~exist(umapFile))
                 [err,prints] = system(['python "' pyFun '" ' correlationFile ' ' umapFile]);
@@ -428,8 +429,16 @@ classdef network_simulation
         end
 
         function network2 = copy_network(obj,newPath)
-            network_simulation(newPath);
+            network3 = network_simulation(newPath);
             network2 = obj;
+
+            network2.morphologyPath = network3.morphologyPath;
+            network2.simulateFunction = network3.simulateFunction;
+            network2.correlationFunction = network3.correlationFunction;
+            network2.mTypeSegmentationData = network3.mTypeSegmentationData;
+            network2.neuronTypes = network3.neuronTypes;
+            network2.embeddingFunction = network3.embeddingFunction;
+
             network2.outputPath = fullfile(newPath);
             network2.preNetwork = fullfile(newPath,'presynaptic_network');
             network2.postNetwork = fullfile(newPath,'postsynaptic_network');
@@ -473,7 +482,7 @@ classdef network_simulation
             MI = M-ME;
 
             k=4;
-            h = network_simulation.eMeanFiringRate*dt*ME*(1-m);
+            h = 5*network_simulation.eMeanFiringRate*dt*ME*(1-m);
 
             % Generate mean firing rate using critical branching process
             B = zeros(N,1);
@@ -578,7 +587,7 @@ classdef network_simulation
         end
 
         function [sa,X] = getHeadModel()
-            load('E:\Research_Projects\004_Propofol\Modelling\head_models\sa_nyhead.mat')
+            load('E:\Research_Projects\004_Propofol\data\resources\head_models\sa_nyhead.mat')
             X = struct();
             X.vertices = sa.cortex75K.vc;
             X.faces= sa.cortex75K.tri;

@@ -21,8 +21,8 @@ Gidon et al.
 import sys
 import os
 sys.path.append('C:/Users/brake/Documents/pyNB')
-sys.path.append('E:/Research_Projects/004_Propofol/Modelling/neuron_simulations')
-sys.path.append('E:/Research_Projects/004_Propofol/Modelling/neuron_simulations/code')
+sys.path.append('C:/Users/brake/Documents/GitHub/aperiodic_EEG_modelling/simulations/functions')
+sys.path.append('C:/Users/brake/Documents/GitHub/aperiodic_EEG_modelling/simulations/_archive')
 import niktools as nt
 import numpy as np
 import LFPy

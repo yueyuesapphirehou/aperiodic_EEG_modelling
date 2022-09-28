@@ -1,18 +1,23 @@
 
 M = 2;
 T = 500;
-N = 500;
+N = 200;
 drivers = randn(T,M);
-k = randi(M,N,1);
+% k = randi(M,N,1);
+k = zeros(N,1);
+idcs = randperm(N,N/2);
+k(idcs) = 1;
 X = zeros(T,N);
 rho = 0.4;
 for i = 1:N
     if(k(i)==1)
-        w(1) = betarnd(5,2);
+        % w(1) = betarnd(5,2);
+        w(1) = 1;
         w(2) = 1-w(1);
         w = w*rho;
     else
-        w(1) = betarnd(2,5);
+        % w(1) = betarnd(2,5);
+        w(1) = 0;
         w(2) = 1-w(1);
         w = w*rho;
     end
@@ -28,20 +33,40 @@ seriated_dist = dist_mat;
 seriated_dist = seriated_dist(res_order,:);
 seriated_dist = seriated_dist(:,res_order);
 
+clrs0 = clrsPT.lines(2);
+
 figureNB(5,2.75);
-    imagesc((1-seriated_dist).*(1-eye(N)));
+    imagesc((1-seriated_dist).*(1-eye(N))); hold on;
+    F = fill([0,200,200,0],[0,0,200,200],'w','LineWidth',0.75);
+    F.EdgeColor = 'k';
+    F.FaceAlpha = 0;
+    F = fill([0,100,100,0],[0,0,100,100],'w','LineWidth',1.5);
+    F.EdgeColor = clrs0(1,:);
+    F.FaceAlpha = 0;
+    F = fill([101,200,200,101],[101,101,200,200],'w','LineWidth',1.5);
+    F.EdgeColor = clrs0(2,:);
+    F.FaceAlpha = 0;
+
     set(gca,'CLim',[0,0.25])
     axis square;
-    colormap(clrsPT.sequential(1e3))
+    % colormap(clrsPT.sequential(1e3))
+    CM = gray(1e3);
+    colormap(flip(CM(200:end,:)));
     C = colorbar;
     C.Label.String = 'Pairwise correlation'
-    C.Color = 'k'
+    C.Color = 'w'
+    C.Ticks = [];
     xlabel('Neuron count')
     ylabel('Neuron count')
     gcaformat;
     xlim([0,N])
     ylim([0,N])
     axis xy
+
+    axis off;
+    text(101,-5,'Neuron count','FontSize',7,'HorizontalAlignment','center','VerticalAlignment','top','color','w')
+    text(-10,101,'Neuron count','FontSize',7,'HorizontalAlignment','center','VerticalAlignment','bottom','rotation',90,'color','w')
+    gcaformat_dark;
 
 dist_list = zeros(N*N,3);
 l=1;

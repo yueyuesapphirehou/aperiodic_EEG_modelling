@@ -1,8 +1,8 @@
 import sys
 import os
 sys.path.append('C:/Users/brake/Documents/pyNB')
-sys.path.append('E:/Research_Projects/004_Propofol/Modelling/neuron_simulations')
-sys.path.append('E:/Research_Projects/004_Propofol/Modelling/neuron_simulations/code')
+sys.path.append('C:/Users/brake/Documents/GitHub/aperiodic_EEG_modelling/simulations/functions')
+sys.path.append('C:/Users/brake/Documents/GitHub/aperiodic_EEG_modelling/simulations/_archive')
 import niktools as nt
 import numpy as np
 import LFPy
@@ -21,7 +21,7 @@ class cortical_neuron():
         G_LEAK                  = 0.0011
 
         pts3d,connections,segs,morphData = getMorphoSegments.morph2Segs(mFile)
-        load_mechanisms('E:/Research_Projects/004_Propofol/Modelling/neuron_simulations/code/_mod')
+        load_mechanisms('C:/Users/brake/Documents/GitHub/aperiodic_EEG_modelling/simulations/_archive/_mod')
         # List to record the type of neuron segment:
         # soma = 0, basal dendrite = 3, apical dendrite = 4
         secType = dict()

@@ -1,5 +1,5 @@
-load('E:\Research_Projects\004_Propofol\Experiments\scalp_EEG\analyzed_data\Cz_multitaper_mean.mat')
-load('E:\Research_Projects\004_Propofol\Experiments\scalp_EEG\raw_data\timeInformation.mat','timeInfo');
+load('E:\Research_Projects\004_Propofol\data\experiments\scalp_EEG\analyzed\Cz_multitaper_mean.mat')
+load('E:\Research_Projects\004_Propofol\data\experiments\scalp_EEG\raw\timeInformation.mat','timeInfo');
 infusionTime = timeInfo.infusion_onset-timeInfo.object_drop;
 for i = 1:size(psd,3)
     pre(:,i) = nanmedian(psd(:,time<infusionTime(i),i),2);
@@ -37,12 +37,14 @@ for idx = 1:14
     P(:,t0:t1,idx) = y;
 end
 
-tRescaled = linspace(-1.5,0.5,1000);
+tRescaled = linspace(-1.5,0.5,50);
 pRescaled = zeros(size(P,1),length(tRescaled),14);
 for i = 1:14
     tr = -time/infusionTime(i);
-    for j = 1:size(P,1)
-        pRescaled(j,:,i) = interp1(tr,P(j,:,i),tRescaled,'nearest');
+    for k = 1:length(tRescaled)-1
+        idx1 = interp1(tr,1:length(tr),tRescaled(k),'previous');
+        idx2 = interp1(tr,1:length(tr),tRescaled(k+1),'next');
+        pRescaled(:,k,i) = nanmean(P(:,idx1:idx2,i),2);
     end
 end
 
@@ -55,8 +57,8 @@ for i = 1:14
 end
 
 pars_pt = zeros(13,size(pRescaled,2),size(pRescaled,3));
-savePath = 'E:\Research_Projects\004_Propofol\Modelling\data_fitting\data';
-for i = 1:1
+savePath = 'E:\Research_Projects\004_Propofol\data\experiments\scalp_EEG\model_fits\rescaled_Sep2022';
+for i = 1:14
     idcs = find(~isnan(pRescaled(1,:,i)));
     [temp,synFun] = synDetrend(ff,10.^pRescaled(:,idcs,i));
     pars_pt(:,idcs,i) = temp';
@@ -66,7 +68,7 @@ end
 
 for i = 1:14
     for j = 1:size(pRescaled,2)
-        OOF(:,j,i) = oofFun(ff,oofPars(:,j,i));
+        % OOF(:,j,i) = oofFun(ff,oofPars(:,j,i));
         ptBL(:,j,i) = synFun(ff,pars_pt(1:4,j,i));
     end 
 end
