@@ -28,7 +28,7 @@ class cortical_neuron():
         # Generate NEURON list of sections
         self.sectionList = h.SectionList()
         mType = str.split(mFile,'\\')[-1][:-4]
-        cnabar, gkbar, shift = self.conductanceLU(mType)
+        cnabar, gkbar, shift, shift2 = self.conductanceLU(mType)
         # Add soma to NEURON model
         self.soma = h.Section(name='soma')
         secType['soma'] = 1
@@ -38,14 +38,14 @@ class cortical_neuron():
         if activeSoma:
             self.soma.insert('inaT')
             self.soma.shift_inaT = shift
-            self.soma.vtraub_inaT = -74
+            self.soma.vtraub_inaT = -68+shift2
             self.soma.gnabar_inaT = cnabar
             self.soma.ena = 60
             self.soma.insert('ikdT')
             self.soma.gkbar_ikdT = gkbar
             self.soma.ek = -80
-            # self.soma.insert('imZ')
-            # self.soma.gkbar_imZ = 5*1e-5
+            self.soma.insert('imZ')
+            self.soma.gkbar_imZ = 5*1e-5
         self.soma.push()
         h.pt3dclear()
         i = 0
@@ -87,50 +87,52 @@ class cortical_neuron():
                 self.dend[i0].connect(self.dend[i1](1))
 
     def conductanceLU(self,mType):
-        if mType == 'L23E_oi24rpy1': # Low
-            shift = 1
+        shift2 = 0
+        if mType == 'L23E_oi24rpy1':
+            shift = -15+1
             gnabar = 0.6*1.8
-            gkbar = 0.5*1.8
-        elif mType == 'L23I_oi38lbc1': # Low
-            shift = 1
-            gnabar = 0.6*1.75
-            gkbar = 0.5*1.75
-        elif mType == 'L4E_53rpy1': # High
-            shift = 1
-            gnabar = 0.6/8
-            gkbar = 0.5/8
-        elif mType == 'L4E_j7_L4stellate': # Low
-            shift = 1
+            gkbar = 0.5*1.8*0.6
+        elif mType == 'L23I_oi38lbc1':
+            shift = -15
             gnabar = 0.6*1.5
             gkbar = 0.5*1.5
-        elif mType == 'L4I_oi26rbc1': # High
-            shift = 1
+        elif mType == 'L4E_53rpy1':
+            shift = -15
+            shift2 = 15
+            gnabar = 0.6
+            gkbar = 0.5
+        elif mType == 'L4E_j7_L4stellate':
+            shift = -15
+            gnabar = 0.6*1.5
+            gkbar = 0.5*1.5
+        elif mType == 'L4I_oi26rbc1':
+            shift = -15
             gnabar = 0.6/1.6
             gkbar = 0.5/1.6
-        elif mType == 'L5E_j4a': # High
-            shift = 1
-            gnabar = 0.6/2.5
-            gkbar = 0.5/2.5
-        elif mType == 'L5E_oi15rpy4': # Low
-            shift = 1
-            gnabar = 0.6*5
-            gkbar = 0.5*5
-        elif mType == 'L5I_oi15rbc1': # Good
-            shift = 1
+        elif mType == 'L5E_j4a':
+            shift = -10+3
+            gnabar = 0.6/2.5*2
+            gkbar = 0.5/2.5*2
+        elif mType == 'L5E_oi15rpy4':
+            shift = -7
+            gnabar = 0.6*5/10*1.5
+            gkbar = 0.5*5/10*1.5
+        elif mType == 'L5I_oi15rbc1':
+            shift = -10
             gnabar = 0.6*1.1
             gkbar = 0.5*1.1
-        elif mType == 'L6E_51_2a_CNG': # High
-            shift = 1
-            gnabar = 0.6/1.5
-            gkbar = 0.5/1.5
-        elif mType == 'L6E_oi15rpy4': # Low
-            shift = 1
+        elif mType == 'L6E_51_2a_CNG':
+            shift = -7
+            gnabar = 0.6/1.5*0.6
+            gkbar = 0.5/1.5*0.6
+        elif mType == 'L6E_oi15rpy4':
+            shift = -15
             gnabar = 0.6*1.8
             gkbar = 0.5*1.8
-        elif mType == 'L6I_oi15rbc1': # Good
-            shift = 1
+        elif mType == 'L6I_oi15rbc1':
+            shift = -5
             gnabar = 0.6
             gkbar = 0.5
         else:
             raise ValueError('mType did not match value in lookup table')
-        return gnabar, gkbar, shift
+        return gnabar, gkbar, shift, shift2

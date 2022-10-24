@@ -1,4 +1,5 @@
-function [params,synFun,full_model] = synDetrend(f,P,nPeaks,fitType,startPointsFile)
+function [params,synFun,full_model] = synDetrend(f,P,nPeaks,fitType,startPoint)
+    myPath = strrep(fileparts(mfilename('fullpath')),'\','/');
     if(nargin<3)
         nPeaks = 3;
     elseif(~isnumeric(nPeaks) || nPeaks>4)
@@ -10,9 +11,11 @@ function [params,synFun,full_model] = synDetrend(f,P,nPeaks,fitType,startPointsF
         error('fitType must be either ''exp2'' or ''lorenz''')
     end
     if(nargin<5)
-        startPointsFile = 'x';
+        startPointsFile = '""';
+    else
+        startPointsFile = strrep(fullfile(myPath,'startPoint.csv'),'\','/');
+        csvwrite(startPointsFile,startPoint);
     end
-    myPath = strrep(fileparts(mfilename('fullpath')),'\','/');
     fileName = 'temp';
     file0 = strrep(fullfile(myPath,[fileName '.csv']),'\','/');
     pyFunction = fullfile(myPath,'detrending.py');
@@ -27,5 +30,9 @@ function [params,synFun,full_model] = synDetrend(f,P,nPeaks,fitType,startPointsF
         error(file)
     end
     params = csvread(file);
+    delete(file0);
+    if(nargin==5)
+        delete(startPointsFile);
+    end
     [full_model,synFun] = fittingmodel(fitType);
 end

@@ -1,17 +1,16 @@
+M = 1100;
+mTypes = randi(11,M,1);
 
-masterPath = 'E:\Research_Projects\004_Propofol\Modelling\neuron_simulations\data\simulations\dipole_orientation';
+masterPath = 'E:\Research_Projects\004_Propofol\data\simulations\raw\synapse_orientations';
 network = network_simulation(masterPath);
-
-M = 500;
-network = network.initialize_postsynaptic_network(M);
-
+network = network.initialize_postsynaptic_network(M,mTypes);
 network.branchingIdx = 0;
-EI = rand(1,M)<0.85;
+EI = rand(1,M)>0.85;
 network = network.setsynapsecount(M);
-network.save_presynaptic_network((1:M)',150*ones(M,1),EI);
+network.save_presynaptic_network((1:M)',150*ones(M,1),EI,network.getsynapsecount,fullfile(network.preNetwork,'spikeTimes.csv'));
 
 
-load('E:\Research_Projects\004_Propofol\Modelling\neuron_simulations\data\cortical_column_Hagen\segment_areas.mat');
+load('E:\Research_Projects\004_Propofol\data\resources\cortical_column_Hagen\segment_areas.mat');
 
 SD = zeros(M,3);
 for j = 1:M

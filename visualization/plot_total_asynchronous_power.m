@@ -27,8 +27,8 @@ SIG0 = mean(sum(asynchUnitarySpec*mean(diff(f))));
 P0 = interp1(f,asynchUnitarySpec,freq);
 
 % asynchUnitarySpec = mean(mean(P(:,1:3,:),3),2);
-% SIG1 = mean(sum(asynchUnitarySpec*mean(diff(f))));
-% P1 = interp1(f,asynchUnitarySpec,freq);
+% SIG0 = mean(sum(asynchUnitarySpec*mean(diff(f))));
+% P0 = interp1(f,asynchUnitarySpec,freq);
 
 SIG_N = @(rho) N+N*(N-1)*rho;
 
@@ -37,7 +37,7 @@ axes('Position',[0.175,0.3,0.22,0.5]);
     plotwitherror(freq,pre,'Q','color',[0.6,0.6,0.6]);
     plot(freq,P0*50/SIG0,'r')
     plot(freq,P0*200/SIG0,'r')
-    % plot(freq,(P1*100/SIG1+P0*100/SIG0)/2,'b','LineWidth',1)
+    % plot(freq,(P0*100/SIG0+P0*100/SIG0)/2,'b','LineWidth',1)
     set(gca,'xscale','log');
     set(gca,'yscale','log');
     xlim([0.5,50]);
@@ -51,6 +51,7 @@ axes('Position',[0.175,0.3,0.22,0.5]);
 axes('Position',[0.55,0.3,0.22,0.5]);
     dscale = 10.^linspace(-1,1,1e3);
     t = 10.^linspace(-2,log10(01),1e3);
+    tt = [];
     for i = 1:length(dscale)
         corr_kernel2 = @(d) exp(-d.^2/dscale(i));
         rho_bar = sum(corr_kernel2(dMids').*nrnCount)/sum(nrnCount');
@@ -81,87 +82,28 @@ subplot(1,2,1);
         rho_bar = sum(corr_kernel2(dMids').*nrnCount)/sum(nrnCount');
         tt(i) = SIG0*SIG_N(rho_bar);
     end
-    plot(dscale,tt)
+    plot(dscale,tt,'k','LineWidth',1)
     set(gca,'xscale','log')
     set(gca,'yscale','log')
     line(get(gca,'xlim'),[50,50],'color','r');
     line(get(gca,'xlim'),[200,200],'color','r');
-    title(sprintf('%.2f',interp1(tt,dscale,200)));
+    xlabel('\sigma^2 (mm)');
+    ylabel(['Total EEG power (' char(956) 'V^2)'])
+    xlim([dscale(1),dscale(end)]);
+    ylim([1e-2,1e4]);
+    title('\rho_{max} = 1');
 subplot(1,2,2);
     dscale = 4;
     t = 10.^linspace(-2,log10(1),1e3);
     corr_kernel2 = @(d) exp(-d.^2/dscale);
     rho_bar = sum(corr_kernel2(dMids').*nrnCount)/sum(nrnCount');
     tt = SIG0*SIG_N(t*rho_bar);
-    plot(t,tt)
+    plot(t,tt,'k','LineWidth',1)
     set(gca,'xscale','log')
     set(gca,'yscale','log')
     line(get(gca,'xlim'),[50,50],'color','r');
     line(get(gca,'xlim'),[200,200],'color','r');
     title(sprintf('%.2f',interp1(tt,t,200)));
-
-
-figureNB;
-subplot(1,2,1);
-    plotwitherror(freq,pre,'Q','color',[0.6,0.6,0.6]*0,'LineWidth',1);
-    plot(freq,P1*100/SIG1,'r','LineWidth',1)
-    set(gca,'xscale','log');
-    set(gca,'yscale','log');
-    xlim([0.5,50]);
-    xticks([0.5,5,50])
-    xticklabels([0.5,5,50])
-    xlabel('Frequency (Hz)');
-    ylim([1e-1,2e2])
-    yticks([1e-2,1,1e2])
-    ylabel(['PSD (' char(956) 'V^2/Hz)'])
-    gcaformat;
-subplot(1,2,2);
-    plotwitherror(freq,pre,'Q','color',[0.6,0.6,0.6]*0,'LineWidth',1);
-    plot(freq,(P1*100/SIG1+P0*100/SIG0)/2,'r','LineWidth',1)
-    set(gca,'xscale','log');
-    set(gca,'yscale','log');
-    xlim([0.5,50]);
-    xticks([0.5,5,50])
-    xticklabels([0.5,5,50])
-    xlabel('Frequency (Hz)');
-    ylim([1e-1,2e2])
-    yticks([1e-2,1,1e2])
-    ylabel(['PSD (' char(956) 'V^2/Hz)'])
-    gcaformat;
-
-
-
-t = 10.^linspace(-10,0,1e3);
-fig = figureNB(6.5,2.75);
-subplot(1,2,1);
-    plot(t,SIG0*SIG_N(t*rho_bar),'k'); hold on;
-    set(gca,'xscale','log')
-    set(gca,'yscale','log')
     xlabel('\rho_{max}')
-    ylabel(['Total EEG power (' char(956) 'V^2)'])
-    ylim([1e-4,1e4]);
-    yticks([1e-4,1,1e4])
-    gcaformat;
-    t0 = interp1(SIG0*SIG_N(t*rho_bar),t,1);
-    t1 = interp1(SIG0*SIG_N(t*rho_bar),t,100);
-    fill([t0,t1,t1,t0],[1e-4,1e-4,100,1],'r','LineStyle','none','FaceAlpha',0.2);
-    idcs = find(and(t>t0,t<t1));
-    plot(t(idcs),SIG0*SIG_N(t(idcs)*rho_bar),'r','LineWidth',1);
-subplot(1,2,2);
-    plotwitherror(freq,P0*SIG_N(0.1*rho_bar),'Q','color','r');
-    plotwitherror(freq,pre,'Q','color',[0.6,0.6,0.6]);
-    % plot(freq,median(pre,2),'k')
-    set(gca,'xscale','log');
-    set(gca,'yscale','log');
-    % xlim([1,300]);
-    % xticks([1,10,100]);
-    % xticklabels([1,10,100]);
-    xlim([0.5,50]);
-    xticks([0.5,5,50])
-    xticklabels([0.5,5,50])
-    xlabel('Frequency (Hz)');
-    ylim([1e-2,2e2])
-    yticks([1e-2,1,1e2])
-    ylabel(['PSD (' char(956) 'V^2/Hz)'])
-    % ylim([1e-2,1e2])
-gcaformat(gcf);
+    ylim([1e-2,1e4]);
+    title('\sigma^2 = 4 mm');

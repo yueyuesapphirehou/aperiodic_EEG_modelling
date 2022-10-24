@@ -34,7 +34,7 @@ for i = 1:14
 end
 
 
-deltaIdx = find(and(freq>=1,freq<4));
+deltaIdx = find(and(freq>=0.5,freq<4));
 alphaIdx = find(and(freq>=8,freq<15));
 betaIdx = find(and(freq>=15,freq<30));
 
@@ -67,11 +67,13 @@ rescaled.alpha_syn = 10*squeeze(nanmean(rescaled.syn(alphaIdx,:,:)));
 rescaled.beta_syn = 10*squeeze(nanmean(rescaled.syn(betaIdx,:,:)));
 rescaled.delta_syn = 10*squeeze(nanmean(rescaled.syn(deltaIdx,:,:)));
 
-
+blue = clrsPT.qualitative_CM.blue;
+clrs = clrsPT.lines(3);
+clrs(2:3,:) = flip(clrs(2:3,:));
 fig = figureNB(12,12);
 axes('Position',[0.09,0.72,0.11,0.14]);
+    plot(freq,preExample,'LineWidth',1,'color',blue); hold on;
     plot(freq,postExample,'k','LineWidth',1); hold on;
-    plot(freq,preExample,'b','LineWidth',0.5); hold on;
     set(gca,'xscale','log');
     set(gca,'yscale','log');
     xlabel('Frequency (Hz)');
@@ -83,11 +85,11 @@ axes('Position',[0.09,0.72,0.11,0.14]);
     xticklabels([0.5,5,50]);
     set(get(gca,'xaxis'),'MinorTick','off');
     set(get(gca,'yaxis'),'MinorTick','off');
-axes('Position',[0.3,0.72,0.11,0.14]);
+axes('Position',[0.29,0.72,0.11,0.14]);
     plot(freq,10*log10(postExample./preExample),'k','LineWidth',1);
     set(gca,'xscale','log');
     xlim([0.5,100]);
-    line(get(gca,'xlim'),[0,0],'color','b','linestyle','-');
+    line(get(gca,'xlim'),[0,0],'LineWidth',1,'color',blue,'linestyle','-');
     xticks([0.5,5,50]);
     xticklabels([0.5,5,50]);
     set(get(gca,'xaxis'),'MinorTick','off');
@@ -106,23 +108,24 @@ axes('Position',[0.51,0.72,0.2,0.18]);
     xticklabels(-3:1)
     ylabel('Frequency (Hz)')
     xlabel('Time rel. LOC (min)')
-    set(gca,'CLim',[-10,18])
+    set(gca,'CLim',[-5,10])
 axes('Position',[0.79,0.72,0.2,0.18]);
-    h(1) = plotwitherror(rescaled.t,smoothdata(rescaled.alpha_pre,'movmedian',10),'SE','LineWidth',1);
-    h(2) = plotwitherror(rescaled.t,smoothdata(rescaled.beta_pre,'movmedian',10),'SE','LineWidth',1);
-    h(3) = plotwitherror(rescaled.t,smoothdata(rescaled.delta_pre,'movmedian',10),'SE','LineWidth',1);
+    h(1) = plotwitherror(rescaled.t,smoothdata(rescaled.alpha_pre,'movmedian',10),'SE','LineWidth',1,'color',clrs(1,:));
+    h(2) = plotwitherror(rescaled.t,smoothdata(rescaled.beta_pre,'movmedian',10),'SE','LineWidth',1,'color',clrs(2,:));
+    h(3) = plotwitherror(rescaled.t,smoothdata(rescaled.delta_pre,'movmedian',10),'SE','LineWidth',1,'color',clrs(3,:));
     xlim([-1.25,0.25]);
     ylim([-2.5,15])
     ylabel('Power (dB)');
     xlabel('Rescaled time')
+    xticks([-1,-0.5,0]);
+    xticklabels([0,0.5,1]);
     line([-1.5,0.5],[0,0],'color','k');
-    clrs = lines(3);
-    text(-1.15,15,'Delta (0.5-4 Hz)','FontSize',7,'Color',clrs(3,:));
     text(-1.15,13,'Alpha (8-15 Hz)','FontSize',7,'Color',clrs(1,:));
     text(-1.15,11,'Beta (15-30 Hz)','FontSize',7,'Color',clrs(2,:));
+    text(-1.15,15,'Delta (0.5-4 Hz)','FontSize',7,'Color',clrs(3,:));
 
 axes('Position',[0.09,0.4,0.11,0.14]);
-    plot(freq,oofFun(freq,oofPost),'b');  hold on
+    plot(freq,oofFun(freq,oofPost),'LineWidth',1,'color',blue);  hold on
     plot(freq,postExample,'k','LineWidth',1);
     set(gca,'xscale','log');
     set(gca,'yscale','log');
@@ -135,11 +138,11 @@ axes('Position',[0.09,0.4,0.11,0.14]);
     ylim([1e-2,1e4]);
     yticks(10.^[-2:2:4]);
     ylabel(['PSD (' char(956) 'V^2/Hz)']);
-axes('Position',[0.3,0.4,0.11,0.14]);
+axes('Position',[0.29,0.4,0.11,0.14]);
     plot(freq,10*log10(postExample./oofFun(freq,oofPost)),'k','LineWidth',1);
     set(gca,'xscale','log');
     xlim([0.5,100]);
-    line(get(gca,'xlim'),[0,0],'color','b','linestyle','-');
+    line(get(gca,'xlim'),[0,0],'LineWidth',1,'color',blue,'linestyle','-');
     xlim([0.5,100]);
     xticks([0.5,5,50]);
     xticklabels([0.5,5,50]);
@@ -159,20 +162,22 @@ axes('Position',[0.51,0.4,0.2,0.18]);
     xticklabels(-3:1)
     ylabel('Frequency (Hz)')
     xlabel('Time rel. LOC (min)')
-    set(gca,'CLim',[-10,18])
+    set(gca,'CLim',[-5,10])
 axes('Position',[0.79,0.4,0.2,0.18]);
-    plotwitherror(rescaled.t,smoothdata(rescaled.alpha_oof,'movmedian',10),'SE','LineWidth',1);
-    plotwitherror(rescaled.t,smoothdata(rescaled.beta_oof,'movmedian',10),'SE','LineWidth',1);
-    plotwitherror(rescaled.t,smoothdata(rescaled.delta_oof,'movmedian',10),'SE','LineWidth',1);
+    plotwitherror(rescaled.t,smoothdata(rescaled.alpha_oof,'movmedian',10),'SE','LineWidth',1,'color',clrs(1,:));
+    plotwitherror(rescaled.t,smoothdata(rescaled.beta_oof,'movmedian',10),'SE','LineWidth',1,'color',clrs(2,:));
+    plotwitherror(rescaled.t,smoothdata(rescaled.delta_oof,'movmedian',10),'SE','LineWidth',1,'color',clrs(3,:));
      xlim([-1.25,0.25]);
      ylim([-2.5,6])
      ylabel('Power (dB)');
      xlabel('Rescaled time')
+     xticks([-1,-0.5,0]);
+     xticklabels([0,0.5,1]);
      line([-1.5,0.5],[0,0],'color','k');
 synPost = [0.047,0.0075,-14.25,4.3];
 axes('Position',[0.09,0.08,0.11,0.14]);
-    plot(freq,10.^synFun(freq,synPost),'b');  hold on
-    plot(freq,postExample,'k','LineWidth',1);
+    plot(freq,postExample,'k','LineWidth',1); hold on;
+    plot(freq,10.^synFun(freq,synPost),'LineWidth',1,'color',blue);  hold on
     set(gca,'xscale','log');
     set(gca,'yscale','log');
     xlim([0.5,100]);
@@ -184,11 +189,11 @@ axes('Position',[0.09,0.08,0.11,0.14]);
     ylim([1e-2,1e4]);
     yticks(10.^[-2:2:4]);
     ylabel(['PSD (' char(956) 'V^2/Hz)']);
-axes('Position',[0.3,0.08,0.11,0.14]);
+axes('Position',[0.29,0.08,0.11,0.14]);
     plot(freq,10*(log10(postExample)-synFun(freq,synPost)),'k','LineWidth',1);
     set(gca,'xscale','log');
     xlim([0.5,100]);
-    line(get(gca,'xlim'),[0,0],'color','b','linestyle','-');
+    line(get(gca,'xlim'),[0,0],'LineWidth',1,'color',blue,'linestyle','-');
     xlim([0.5,100]);
     xticks([0.5,5,50]);
     xticklabels([0.5,5,50]);
@@ -208,19 +213,25 @@ axes('Position',[0.51,0.08,0.2,0.18]);
     xticklabels(-3:1)
     ylabel('Frequency (Hz)')
     xlabel('Time rel. LOC (min)')
-    set(gca,'CLim',[-10,18])
+    set(gca,'CLim',[-5,10])
 axes('Position',[0.79,0.08,0.2,0.18]);
-    plotwitherror(tRescaled,smoothdata(rescaled.alpha_syn,'movmedian',3),'SE','LineWidth',1);
-    plotwitherror(tRescaled,smoothdata(rescaled.beta_syn,'movmedian',3),'SE','LineWidth',1);
-    plotwitherror(tRescaled,smoothdata(rescaled.delta_syn,'movmedian',3),'SE','LineWidth',1);
+    plotwitherror(tRescaled,smoothdata(rescaled.alpha_syn,'movmedian',3),'SE','LineWidth',1,'color',clrs(1,:));
+    plotwitherror(tRescaled,smoothdata(rescaled.beta_syn,'movmedian',3),'SE','LineWidth',1,'color',clrs(2,:));
+    plotwitherror(tRescaled,smoothdata(rescaled.delta_syn,'movmedian',3),'SE','LineWidth',1,'color',clrs(3,:));
     xlim([-1.25,0.25]);
     ylabel('Power (dB)');
     xlabel('Rescaled time')
+    xticks([-1,-0.5,0]);
+    xticklabels([0,0.5,1]);
     line([-1.5,0.5],[0,0],'color','k');
     ylim([-2.5,5])
 
 gcaformat(fig);
 
+
+idcs = [interp1(linspace(0,1,200),1:200,linspace(0,1,50),'nearest','extrap'),interp1(linspace(0,1,200),201:400,linspace(0,1,100),'nearest','extrap')];
+CM = clrsPT.iridescent(400);
+colormap(flip(CM(idcs,:)));
 
 labelpanel(0.01,0.86,'a',true);
 labelpanel(0.44,0.86,'b',true);
@@ -251,3 +262,47 @@ A.String = 'Lorentzian detrended';
 A.FontSize = 7;
 A.FontWeight = 'normal';
 A.Position(3) = 0.3;
+
+
+
+
+[full_model,synFun] = fittingmodel;
+tRescaled = linspace(-1.5,0.5,200);
+folder = 'E:\Research_Projects\004_Propofol\data\experiments\scalp_EEG\model_fits\rescaled_manual\fitted';
+for i = 1:14
+    load(fullfile(folder,['pt' int2str(i) '_rescaled_28-Sep-2022.mat']));
+    params(:,:,i) = pars;
+end
+ff = 0.5:0.5:150;
+for i = 1:14
+    for j = 1:size(params,2)
+        ptBL(:,j,i) = synFun(ff,params(:,j,i));
+    end
+end
+
+figureNB;
+    N = 5;
+    m = 3;
+    clrs = clrsPT.sequential(N+m);
+    clrs = clrs(1+m:end,:);
+    idcs = find(and(tRescaled>-1,tRescaled<0));
+    k = floor(length(idcs)/N);
+    for i = 1:N
+        BL = mean(mean(ptBL(:,idcs(k*(i-1)+1:k*i),:),2),3);
+        plot(ff,10.^BL,'color',clrs(i,:),'LineWidth',1); hold on;
+    end
+    set(gca,'xscale','log')
+    set(gca,'yscale','log')
+    xlim([0.5,100])
+    xticks([1,10,100])
+    gcaformat
+    xlabel('Frequency (Hz)')
+    ylabel(['PSD (' char(956) 'V^2/Hz)'])
+
+colormap(clrs)
+CB = colorbar('location','south');
+CB.TickLabels = {'Infusion','LOC'};
+CB.Label.String = 'Rescaled time';
+CB.TickDirection = 'out';
+CB.TickLength = 0.05;
+CB.Ticks = [0.5/N,1-0.5/N];

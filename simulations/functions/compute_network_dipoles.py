@@ -83,7 +83,12 @@ def load_syanpse_locations(synapseFile):
     return synSeg,synPre
 
 def addsyns(synapseFile,preEI,preSpikes,propofol):
-    SYANPSE_FAILURE_RATE    = 0 # 0.7;      # Synapse failure rate
+    # SYANPSE_FAILURE_RATE    = 0.7;      # Synapse failure rate
+
+    # tau = int(propofol/100)
+    # remainder = propofol-tau*100
+    # tau_change = int(remainder/10)
+    # weight_change = remainder-tau_change*10
     EX_PARAMS = {'idx': 0,
                     'e': 0,
                     'syntype': 'Exp2Syn',
@@ -92,13 +97,15 @@ def addsyns(synapseFile,preEI,preSpikes,propofol):
                     'weight': 0.0007, # uS
                     'record_current': False}
     IN_PARAMS = {'idx': 0,
-                    'e': -75,
+                    # 'e': -75,
+                    'e':-80,
                     'syntype': 'Exp2Syn',
                     'tau1': 2,
                     'tau2': 23*(1+propofol),
-                    'weight': 0.0014*(1+propofol), # uS
+                    # 'tau2': tau*tau_change,
+                    # 'tau2': 16*(1+propofol),
+                    'weight': 0.0014,#*weight_change, # uS
                     'record_current': False}
-
     synSeg,synPre = load_syanpse_locations(synapseFile)
     synTimes = list()
     synParams = list()
@@ -107,7 +114,7 @@ def addsyns(synapseFile,preEI,preSpikes,propofol):
         ts = preSpikes[synPre[i]]
         # ts = [x+1000 for x in ts]
         # ts = [x for x in ts if x>1e3]
-        # # spikeSelection = np.random.binomial(len(ts),1-SYANPSE_FAILURE_RATE)
+        # spikeSelection = np.random.binomial(len(ts),1-SYANPSE_FAILURE_RATE)
         # ts = np.random.choice(ts,spikeSelection,replace=False).tolist()
         if(preEI[synPre[i]]):
             params = IN_PARAMS.copy()
@@ -148,6 +155,8 @@ def main(mFile,synapseFiles,preEI,preSpikes,savePath,T_MAX=100,activeSoma=False,
         data = np.concatenate((t,cdm.data.T,v),axis=1)
         np.savetxt(saveFile, data, delimiter=",", header="time,Qx,Qy,Qz,V_soma", fmt="%f,%f,%f,%f,%f")
         print(saveFile)
+        cell.strip_hoc_objects()
+
 
 if __name__ == "__main__":
     pars = sys.argv
@@ -157,6 +166,7 @@ if __name__ == "__main__":
     savePath = pars[3]
     T_MAX = int(pars[4])
     activeSoma = (pars[5]=="true")
+    propofol = float(pars[6])
 
     preEI,preSpikes = load_spike_times(spikingFile)
     mFiles,synapseFiles = import_postsyanptic_network(networkPath)
@@ -169,4 +179,4 @@ if __name__ == "__main__":
             mTypes[m].append(synapseFiles[i])
 
     for m in mTypes.keys():
-        main(m,mTypes[m],preEI,preSpikes,savePath,T_MAX,activeSoma)
+        main(m,mTypes[m],preEI,preSpikes,savePath,T_MAX,activeSoma,propofol)

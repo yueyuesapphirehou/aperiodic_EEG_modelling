@@ -10,12 +10,6 @@ classdef network_simulation
         results = struct('t',[],'dipoles',[],'Vmem',[]);
     end
 
-    properties (Constant)
-        eiFraction = 0.85;
-        eMeanFiringRate = 1; % Hz
-        iMeanFiringRate = 1/0.15; % Hz
-    end
-
     properties (Access = private)
         morphologyPath = 'E:/Research_Projects/004_Propofol/data/resources/cortical_column_Hagen/swc';
         simulateFunction = 'C:/Users/brake/Documents/GitHub/aperiodic_EEG_modelling/simulations/functions/compute_network_dipoles.py';
@@ -27,14 +21,19 @@ classdef network_simulation
         dendriteLengths = [9319,4750,4750,7169,4320,4320,2359,2359,14247,5720,5134,5134,5666,6183,5134,5134];
         samplingFrequency = 16000
         activeConductances = false
+        propofol = 0
         synapseCount
         morphoCounts
         correlationFile
+        eiFraction = 0.85;
+        eFiringRate = 1; % Hz
+        iFiringRate = 6.67; % Hz
     end
 
     methods
 
         function obj = network_simulation(outputPath)
+            warning('off','MATLAB:MKDIR:DirectoryExists')
             if(nargin>0)
                 obj.outputPath = outputPath;
                 obj.postNetwork = fullfile(outputPath,'postsynaptic_network');
@@ -124,23 +123,17 @@ classdef network_simulation
                 end
             end
 
-            [neuronIDs,spikeTime,ei,B,t] = network_simulation.simulatespikes(tmax*1e-3+0.1,obj.synapseCount,m);
+            [neuronIDs,spikeTime,ei,B,t] = obj.simulatespikes(m);
 
             network_simulation.save_presynaptic_network(neuronIDs,spikeTime,ei,obj.synapseCount,fullfile(obj.preNetwork,'spikeTimes.csv'));
         end
 
         function form_connections(obj,coordination_index)
-        % Places synapses such that correlated synapses are placed in dendrite segments
-        % with similar directions relative to the soma
+        % Places synapses such that correlated synapses are placed in dendrite segments with similar directions relative to the soma
 
-            % Performs UMAP on spike train correlation matrix to embed
-            % functionally similar presynaptic neurons close to each other
-            % on a sphere.
-            synapseEmbedding = obj.embedPresynapticNetwork();
-
-            % Location of synaspes are perturbed away from optimal positions
-            % by an amount determined by coordination_index between 0 and 1.
-            synapseEmbedding = network_simulation.perturbSynapsePositions(synapseEmbedding,coordination_index);
+            if(nargin<2)
+                coordination_index = 0;
+            end
 
             % Load neuron segment locations projected onto sphere
             load(obj.mTypeSegmentationData)
@@ -185,37 +178,52 @@ classdef network_simulation
             contIdx = cellfun(@(x,y) repmat(x,[y,1]),contIdx,mcs,'UniformOutput',false);
             contIdx = cat(1,contIdx{:});
 
-            % Greedy algorithm. For each neuron segment select the presynaptic
-            % neuron closest on the sphere embedding ***without replacement***
+
             saCDF = cumsum(sa)/sum(sa);
             iSegsPooled = interp1(saCDF,1:length(saCDF),rand(obj.synapseCount,1),'next','extrap');
             iSegs = contIdx(iSegsPooled);
-            syn = zeros(size(iSegs));
-            remainingSyns = true(obj.synapseCount,1);
-            h = waitbar(0,'Wiring network together...');
-            for i = 1:obj.synapseCount
-                waitbar(i/obj.synapseCount,h)
-                D = 1-haversine_distance(dendriteEmbedding(iSegs(i),:),synapseEmbedding);
-                [~,syn(i)] = max(D.*remainingSyns);
-                remainingSyns(syn(i)) = false;
+
+            % If the syanpses are not placed randomly, perform UMAP on spike train correlation matrix to embed functionally similar presynaptic neurons close to each other
+            % Location of synaspes are perturbed away from optimal positions by an amount determined by coordination_index between 0 and 1.
+            if(coordination_index>0)
+                synapseEmbedding = obj.embedPresynapticNetwork();
+                synapseEmbedding = network_simulation.perturbSynapsePositions(synapseEmbedding,1-coordination_index);
+
+                % Greedy algorithm. For each neuron segment select the presynaptic neuron closest on the sphere embedding
+                syn = zeros(size(iSegs));
+                remainingSyns = true(obj.synapseCount,1);
+                h = waitbar(0,'Wiring network together...');
+                for i = 1:obj.synapseCount
+                    waitbar(i/obj.synapseCount,h)
+                    D = 1-haversine_distance(dendriteEmbedding(iSegs(i),:),synapseEmbedding);
+                    [~,syn(i)] = max(D.*remainingSyns);
+                    remainingSyns(syn(i)) = false;
+                end
+                delete(h)
+            else
+                syn = randperm(obj.synapseCount);
             end
-            delete(h)
 
             % Save connections in seperate csv files for each neuron
             % First column inidicates the segment number and the
             % second column indicates the pre synaptic neuron ID
-            for j = 1:length(obj.neurons)
-                simID = obj.neurons(j).name;
-                filename = fullfile(obj.postNetwork,'connections',[simID '.csv']);
-                fid(j) = fopen(filename,'w');
-            end
+            data = zeros(obj.synapseCount,3);
             for i = 1:obj.synapseCount
                 j = nrnID(iSegsPooled(i));
                 seg = segID(iSegs(i));
                 pre = syn(i);
-                fprintf(fid(j),'%s,%s\n',int2str(seg),int2str(pre));
+                data(i,:) = [j,seg,pre];
             end
-            fclose('all');
+            for j = 1:length(obj.neurons)
+                simID = obj.neurons(j).name;
+                filename = fullfile(obj.postNetwork,'connections',[simID '.csv']);
+                fid = fopen(filename,'w');
+                idcs = find(data(:,1)==j);
+                for i = 1:length(idcs)
+                    fprintf(fid,'%s,%s\n',int2str(data(idcs(i),2)),int2str(data(idcs(i),3)));
+                end
+                fclose(fid);
+            end
         end
 
         function embedding = embedPresynapticNetwork(obj)
@@ -259,7 +267,8 @@ classdef network_simulation
             % Get pairwise correlation matrix among all presynaptic
             % neurons based on spike trains (sparse)
             obj.correlationFile = fullfile(obj.preNetwork,'correlations.csv');
-            temp = fullfile('C:\Users\brake\workspace','correlations.csv');
+            % temp = fullfile('C:\Users\brake\workspace','correlations.csv');
+            corrFile = fullfile(obj.preNetwork,'correlations2.csv');
             if(exist(obj.correlationFile))
                 disp('Correlation file already exists.');
                 return;
@@ -267,23 +276,33 @@ classdef network_simulation
             if(nargin<2)
                 spikingFile = fullfile(obj.preNetwork,'spikeTimes.csv');
             end
-            temp2 = fullfile('C:\Users\brake\workspace','spikeTimes.csv');
+            % temp2 = fullfile('C:\Users\brake\workspace','spikeTimes.csv');
             % copyfile(spikingFile,temp2);
-            [err,prints] = system([obj.correlationFunction ' ' temp2 ' ' temp]);
+            [err,prints] = system([obj.correlationFunction ' ' spikingFile ' ' corrFile]);
             if(err~=0)
                 error(sprintf('%d: %s',err,prints));
             end
             movefile(temp,obj.correlationFile);
         end
 
-        function obj = addActiveChannels(obj)
-            obj.activeConductances = true;
+        function obj = addActiveChannels(obj,toAdd)
+            if(nargin<2)
+                obj.activeConductances = true;
+            else
+                obj.activeConductances = toAdd;
+            end
         end
 
-        function obj = simulate(obj,outputPath)
-            if(nargin>1)
-                obj.outputPath = outputPath;
+        function obj = addPropofol(obj,x)
+            if(nargin<2)
+                obj.propofol = 1;
+            else
+                obj.propofol = x;
             end
+            % obj.eFiringRate = obj.eFiringRate*0.5;
+        end
+
+        function obj = simulate(obj)
             if(isempty(obj.outputPath))
                 error('Output directory (obj.outputPath) must be specified.');
             end
@@ -295,7 +314,7 @@ classdef network_simulation
             end
 
             spikingFile = fullfile(obj.preNetwork,'spikeTimes.csv');
-            params = strjoin({obj.postNetwork,spikingFile,obj.outputPath,int2str(obj.tmax+100),char(string(obj.activeConductances))});
+            params = strjoin({obj.postNetwork,spikingFile,obj.outputPath,int2str(obj.tmax+100),char(string(obj.activeConductances)),num2str(obj.propofol)});
             prints = pySimulate(params,obj.simulateFunction);
             outputFiles = split(prints,char(10));
             for j = 1:length(obj.neurons)
@@ -303,7 +322,7 @@ classdef network_simulation
                 idx = find(cellfun(@(x)~isempty(strfind(x,id)),outputFiles));
                 obj.neurons(j).sim = outputFiles{idx};
             end
-
+            obj.importResults;
             obj.save()
         end
 
@@ -350,16 +369,30 @@ classdef network_simulation
             if(nargin<4)
                 idcs = sa.cortex2K.in_from_cortex75K;
             end
-            q = sum(obj.results.dipoles(:,:,neuronIDs),3);
-            for j = 1:length(idcs)
-                eeg = network_simulation.getEEG(q,sa,idcs(j));
-                [temp,f] = pmtm(eeg,2,[],1e3*16);
-                if(j==1 && i==1)
-                    P = zeros(size(temp,1),length(idcs));
+
+            for j = 1:length(neuronIDs);
+                temp = resample(obj.results.dipoles(2:end,:,neuronIDs(j)),2e3,16e3);
+                if(j==1)
+                    dp = zeros(size(temp,1),3,length(neuronIDs));
                 end
-                P(:,j) = temp;
+                dp(:,:,j) = temp;
             end
-            P = mean(P,2);
+            q = gpuArray(dp);
+            t = obj.results.t;
+
+            h = waitbar(0);
+            for j = 1:length(idcs)
+                waitbar(j/length(idcs),h);
+                eeg = network_simulation.getEEG(q,sa,idcs(j));
+                temp = mypmtm(eeg,2e3,2);
+               if(j==1)
+                    P = zeros(size(temp));
+                end
+                P = P+temp;
+            end
+            close(h);
+            P = P/length(idcs)*pi/2;
+            f = 0.5:0.5:1e3;
         end
 
         function [f,P] = getUnitarySpectrum(obj,neuronIDs,sa,idcs,toSum)
@@ -378,7 +411,7 @@ classdef network_simulation
             for i = 1:length(idcs)
                 waitbar(i/length(idcs),h);
                 eeg = network_simulation.getEEG(q,sa,idcs(i));
-                [temp,f] = pmtm(detrend(eeg),2,[],1e3*16);
+                [temp,f] = pmtm(eeg,2,[],1e3*16);
                 if(i==1);
                     P = zeros(size(temp));
                 end
@@ -420,6 +453,10 @@ classdef network_simulation
             gcaformat
         end
 
+        function obj = setFiringRate(obj,lambdaE,lambdaI)
+            obj.eFiringRate = lambdaE;
+            obj.iFiringRate = lambdaI;
+        end
         function network = setCorrelationFile(network,file)
             network.correlationFile = file;
         end
@@ -442,19 +479,27 @@ classdef network_simulation
             network2.outputPath = fullfile(newPath);
             network2.preNetwork = fullfile(newPath,'presynaptic_network');
             network2.postNetwork = fullfile(newPath,'postsynaptic_network');
-            for i = 1:length(network2.neurons)
-                [~,cellNo] = fileparts(network2.neurons(1).sim);
-                network2.neurons(1).sim = fullfile(newPath,'LFPy',[cellNo '.csv']);
+            try
+                for i = 1:length(network2.neurons)
+                    [~,cellNo] = fileparts(network2.neurons(1).sim);
+                    network2.neurons(1).sim = fullfile(newPath,'LFPy',[cellNo '.csv']);
+                end
+            catch
+                disp('No simulation files to copy.');
             end
 
             copyfile(obj.postNetwork,network2.postNetwork);
             copyfile(fullfile(obj.preNetwork,'spikeTimes.csv'),fullfile(network2.preNetwork,'spikeTimes.csv'));
-            copyfile(fullfile(obj.preNetwork,'UMAP_embedding.csv'),fullfile(network2.preNetwork,'UMAP_embedding.csv'));
-            network2.correlationFile = obj.correlationFile;
-            fid = fopen(fullfile(network2.preNetwork,'correlations(shortcut).txt'),'w');
-            txt = ['Network is using the correlation file at location ' strrep(obj.correlationFile,'\','\\')];
-            fprintf(fid,txt);
-            fclose(fid);
+            try
+                copyfile(fullfile(obj.preNetwork,'UMAP_embedding.csv'),fullfile(network2.preNetwork,'UMAP_embedding.csv'));
+                network2.correlationFile = obj.correlationFile;
+                fid = fopen(fullfile(network2.preNetwork,'correlations(shortcut).txt'),'w');
+                txt = ['Network is using the correlation file at location ' strrep(obj.correlationFile,'\','\\')];
+                fprintf(fid,txt);
+                fclose(fid);
+            catch err
+                disp(['Caught exception: ' err.identifier])
+            end
             F = dir(fullfile(obj.outputPath,'LFPy'));
             F = F(3:end);
             for j = 1:length(F)
@@ -462,27 +507,22 @@ classdef network_simulation
             end
             network2.save();
         end
-    end
 
-    methods (Static)
-
-        function [neuronIDs,spikeTime,ei,B,t] = simulatespikes(tmax,M,m,rateOnly)
+        function [neuronIDs,spikeTime,ei,B,t] = simulatespikes(obj,m)
             if(m>1)
                 error('Branching index must be less than 1.')
             end
-            if(nargin<4)
-                rateOnly = false;
-            end
-            tmax = tmax+2;
+            tmax = obj.tmax*1e-3+2.1;
+            M = obj.synapseCount;
             dt = 4e-3;
             t = 0:dt:tmax;
             N = length(t);
 
-            ME = floor(network_simulation.eiFraction*M);
+            ME = floor(obj.eiFraction*M);
             MI = M-ME;
 
-            k=4;
-            h = 5*network_simulation.eMeanFiringRate*dt*ME*(1-m);
+            k = 4;
+            h = obj.eFiringRate*dt*ME*(1-m);
 
             % Generate mean firing rate using critical branching process
             B = zeros(N,1);
@@ -498,17 +538,10 @@ classdef network_simulation
             B(t<2) = [];
             t(t<2) = []; t = t-2;
 
-            if(rateOnly)
-                neuronIDs = [];
-                spikeTime = [];
-                ei = [];
-                return;
-            end
-
             numspikes = sum(B);
             spikeTime = zeros(5*numspikes,1);
             neuronIDs = zeros(5*numspikes,1);
-            lRatio = network_simulation.iMeanFiringRate/network_simulation.eMeanFiringRate*(1-network_simulation.eiFraction);
+            eiRatio = obj.iFiringRate/obj.eFiringRate;
             j = 0;
             for i = 1:length(t)
                 nEx = poissrnd(B(i));
@@ -516,7 +549,7 @@ classdef network_simulation
                 neuronIDs(j+1:j+nEx) = randperm(ME,nEx);
                 j = j+nEx;
 
-                nIn = poissrnd(lRatio*B(i));
+                nIn = poissrnd(B(i)/eiRatio);
                 spikeTime(j+1:j+nIn) = t(i) + rand(1,nIn)*dt - dt/2;
                 neuronIDs(j+1:j+nIn) = ME+randperm(MI,nIn);
                 j = j+nIn;
@@ -528,6 +561,10 @@ classdef network_simulation
             spikeTime = 1e3*spikeTime(I);
         end
 
+    end
+
+    methods (Static)
+
         function save_presynaptic_network(neuronIDs,spikeTime,ei,synapseCount,filename)
         % Save spiketimes generated by simulatespikes as a csv file for later use
             fid = fopen(filename,'w');
@@ -537,7 +574,7 @@ classdef network_simulation
             for i = 1:synapseCount
                 if(i-UC>length(uM))
                     ts = [];
-                    ei(i) = rand>network_simulation.eiFraction;
+                    ei(i) = rand>0.85;
                 else
                     if(uM(i-UC)==i)
                         ts = spikeTime(I{i-UC});

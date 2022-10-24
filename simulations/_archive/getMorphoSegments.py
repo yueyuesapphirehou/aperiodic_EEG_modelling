@@ -16,7 +16,6 @@ def morph2Segs(cellID):
             arbours.append((i,temp))
     segs = list()
     cons = list()
-    print(arbours)
     for i in range(len(arbours)):
         for j in arbours[i][1]:
             segs,cons = get_segments(np.array([j]),arbours[i][0],-1,segs,cons,data)
