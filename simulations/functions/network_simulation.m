@@ -7,16 +7,24 @@ classdef network_simulation
         outputPath
         postNetwork
         preNetwork
+        spikingFile
+        savePath
         results = struct('t',[],'dipoles',[],'Vmem',[]);
     end
 
+    properties (Constant)
+        resourceFolder = 'E:/Research_Projects/004_Propofol/data/resources';
+        functionFolder = fileparts(mfilename('fullpath'));
+    end
+
     properties (Access = private)
-        morphologyPath = 'E:/Research_Projects/004_Propofol/data/resources/cortical_column_Hagen/swc';
-        simulateFunction = 'C:/Users/brake/Documents/GitHub/aperiodic_EEG_modelling/simulations/functions/compute_network_dipoles.py';
-        correlationFunction = 'C:/Users/brake/Documents/GitHub/aperiodic_EEG_modelling/simulations/functions/compute_correlation_matrix.exe';
-        mTypeSegmentationData = 'E:\Research_Projects\004_Propofol\data\resources\cortical_column_Hagen\segment_areas.mat';
+        morphologyPath = fullfile(network_simulation.resourceFolder,'cortical_column_Hagen','swc');
+        mTypeSegmentationData = fullfile(network_simulation.resourceFolder,'cortical_column_Hagen','segment_areas.mat');
+        simulateFunction = fullfile(network_simulation.functionFolder,'compute_network_dipoles.py');
+        correlationFunction = fullfile(network_simulation.functionFolder,'compute_correlation_matrix_parallel.exe');
+        embeddingFunction = fullfile(network_simulation.functionFolder,'embed_data.py');
+
         neuronTypes = {'L23E_oi24rpy1';'L23I_oi38lbc1';'L23I_oi38lbc1';'L4E_53rpy1';'L4E_j7_L4stellate';'L4E_j7_L4stellate';'L4I_oi26rbc1';'L4I_oi26rbc1';'L5E_oi15rpy4';'L5E_j4a';'L5I_oi15rbc1';'L5I_oi15rbc1';'L6E_51_2a_CNG';'L6E_oi15rpy4';'L6I_oi15rbc1';'L6I_oi15rbc1'};
-        embeddingFunction = 'C:/Users/brake/Documents/GitHub/aperiodic_EEG_modelling/simulations/functions/embed_data.py'
         nrnAbundance = [26.8,3.2,4.3,9.5,9.5,9.5,5.6,1.5,4.9,1.3,0.6,0.8,14,4.6,1.9,1.9]/100
         dendriteLengths = [9319,4750,4750,7169,4320,4320,2359,2359,14247,5720,5134,5134,5666,6183,5134,5134];
         samplingFrequency = 16000
@@ -38,6 +46,7 @@ classdef network_simulation
                 obj.outputPath = outputPath;
                 obj.postNetwork = fullfile(outputPath,'postsynaptic_network');
                 obj.preNetwork = fullfile(outputPath,'presynaptic_network');
+                obj.correlationFile = fullfile(obj.preNetwork,'correlations.csv');
                 mkdir(obj.outputPath);
                 mkdir(obj.postNetwork);
                 mkdir(obj.preNetwork);
@@ -165,10 +174,7 @@ classdef network_simulation
                     counter2 = counter2+1;
                 end
             end
-            dends = [X,Y,Z];
-            theta = atan2(X,Y);
-            phi = -acos(Z);
-            dendriteEmbedding = [theta(:),phi(:)];
+            dendriteEmbedding = [X,Y,Z];
 
             % Randomly draw neuron segments from postsynaptic population,
             % proportionally to segment surface area
@@ -189,9 +195,15 @@ classdef network_simulation
                 synapseEmbedding = obj.embedPresynapticNetwork();
                 synapseEmbedding = network_simulation.perturbSynapsePositions(synapseEmbedding,1-coordination_index);
 
+                % Convert to spherical coordinates to compute Haversine distances
+                [theta,phi] = cart2sph(synapseEmbedding(:,1),synapseEmbedding(:,2),synapseEmbedding(:,3));
+                synapseEmbedding = [phi(:),theta(:)];
+                [theta,phi] = cart2sph(dendriteEmbedding(:,1),dendriteEmbedding(:,2),dendriteEmbedding(:,3));
+                dendriteEmbedding = [phi(:),theta(:)];
+
                 % Greedy algorithm. For each neuron segment select the presynaptic neuron closest on the sphere embedding
                 syn = zeros(size(iSegs));
-                remainingSyns = true(obj.synapseCount,1);
+                remainingSyns = true(size(synapseEmbedding,1),1);
                 h = waitbar(0,'Wiring network together...');
                 for i = 1:obj.synapseCount
                     waitbar(i/obj.synapseCount,h)
@@ -238,7 +250,7 @@ classdef network_simulation
             % Run UMAP using python module
             % Haversine metric allows embedding data onto a sphere
             pyFun = obj.embeddingFunction;
-            umapFile = fullfile(obj.preNetwork,'UMAP_embedding.csv');
+            umapFile = fullfile(fileparts(network.getCorrelationFile),'UMAP_embedding.csv');
             if(~exist(umapFile))
                 [err,prints] = system(['python "' pyFun '" ' correlationFile ' ' umapFile]);
                 if(err)
@@ -246,29 +258,26 @@ classdef network_simulation
                 end
             end
             data = csvread(umapFile);
-            subIdcs = data(:,1)+1;
-            x = cos(data(:,2)).*sin(data(:,3));
-            y = sin(data(:,2)).*sin(data(:,3));
-            z = cos(data(:,3));
-            umap = [x(:),y(:),z(:)];
-            embedding(subIdcs,:) = umap;
+            [x,y,z] = sph2cart(data(:,2),data(:,3)+pi/2,data(:,3)*0+1);
+            embedding = [x(:),y(:),z(:)];
+            M = size(embedding,1);
 
-            % Place all the left over synapses, i.e. those that were not correlated, randomly on the sphere
-            leftIdcs = setdiff(1:N,subIdcs);
-            K = length(leftIdcs);
-            elevation = asin(2*rand(K,1)-1);
-            azimuth = 2*pi*rand(K,1);
-            [x,y,z] = sph2cart(azimuth,elevation,1);
-            uncorrelated = [x,y,z];
-            embedding(leftIdcs,:) = uncorrelated;
+            if(M>N)
+                embedding = embedding(1:N,:);
+            elseif(M<N)
+                % Place all the left over synapses, i.e. those that were not correlated, randomly on the sphere
+                K = N-M;
+                elevation = asin(2*rand(K,1)-1);
+                azimuth = 2*pi*rand(K,1);
+                [x,y,z] = sph2cart(azimuth,elevation,1);
+                uncorrelated = [x,y,z];
+                embedding = [embedding;uncorrelated];
+            end
         end
 
         function obj = compute_presynaptic_correlations(obj,spikingFile)
             % Get pairwise correlation matrix among all presynaptic
             % neurons based on spike trains (sparse)
-            obj.correlationFile = fullfile(obj.preNetwork,'correlations.csv');
-            % temp = fullfile('C:\Users\brake\workspace','correlations.csv');
-            corrFile = fullfile(obj.preNetwork,'correlations2.csv');
             if(exist(obj.correlationFile))
                 disp('Correlation file already exists.');
                 return;
@@ -276,13 +285,10 @@ classdef network_simulation
             if(nargin<2)
                 spikingFile = fullfile(obj.preNetwork,'spikeTimes.csv');
             end
-            % temp2 = fullfile('C:\Users\brake\workspace','spikeTimes.csv');
-            % copyfile(spikingFile,temp2);
-            [err,prints] = system([obj.correlationFunction ' ' spikingFile ' ' corrFile]);
+            [err,prints] = system([obj.correlationFunction ' ' spikingFile ' ' obj.correlationFile]);
             if(err~=0)
                 error(sprintf('%d: %s',err,prints));
             end
-            movefile(temp,obj.correlationFile);
         end
 
         function obj = addActiveChannels(obj,toAdd)
@@ -300,6 +306,16 @@ classdef network_simulation
                 obj.propofol = x;
             end
             % obj.eFiringRate = obj.eFiringRate*0.5;
+        end
+
+        function params = getSimulationParams(obj)
+            params.postNetwork = obj.postNetwork;
+            params.spikingFile = fullfile(obj.preNetwork,'spikeTimes.csv');
+            params.outputPath = obj.outputPath;
+            params.tmax = obj.tmax+100;
+            params.soma = char(string(obj.activeConductances))
+            params.propofol = obj.propofol;
+            params.simulateFunction = obj.simulateFunction;
         end
 
         function obj = simulate(obj)
@@ -565,6 +581,24 @@ classdef network_simulation
 
     methods (Static)
 
+        % function obj = simulate(params)
+        %     strParams = strjoin({params.postNetwork,params.spikingFile,params.outputPath,int2str(params.tmax),params.soma,num2str(params.propofol)});
+        %     save(fullfile(params.outputPath,'params.mat'));
+        %     pySimulate(strParams,params.simulateFunction);
+        % end
+
+        % Generate network object from directory
+        % function obj = reap_network(folder)
+        %     network = network_simulation(folder);
+        %     for j = 1:length(obj.neurons)
+        %         id = obj.neurons(j).name;
+        %         idx = find(cellfun(@(x)~isempty(strfind(x,id)),outputFiles));
+        %         obj.neurons(j).sim = outputFiles{idx};
+        %     end
+        %     obj.importResults;
+        %     obj.save()
+        % end
+
         function save_presynaptic_network(neuronIDs,spikeTime,ei,synapseCount,filename)
         % Save spiketimes generated by simulatespikes as a csv file for later use
             fid = fopen(filename,'w');
@@ -624,7 +658,7 @@ classdef network_simulation
         end
 
         function [sa,X] = getHeadModel()
-            load('E:\Research_Projects\004_Propofol\data\resources\head_models\sa_nyhead.mat')
+            load(fullfile(network_simulation.resourceFolder,'head_models','sa_nyhead.mat'));
             X = struct();
             X.vertices = sa.cortex75K.vc;
             X.faces= sa.cortex75K.tri;

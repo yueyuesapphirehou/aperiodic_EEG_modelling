@@ -20,18 +20,11 @@ Gidon et al.
 
 import sys
 import os
-sys.path.append('C:/Users/brake/Documents/pyNB')
-sys.path.append('C:/Users/brake/Documents/GitHub/aperiodic_EEG_modelling/simulations/functions')
-sys.path.append('C:/Users/brake/Documents/GitHub/aperiodic_EEG_modelling/simulations/_archive')
-import niktools as nt
 import numpy as np
 import LFPy
-import getMorphoSegments
 from cortical_neuron import cortical_neuron as init_neuron
 import csv
-import mat4py as m4p
 from neuron import h, load_mechanisms
-from matplotlib import pyplot as plt
 from scipy.stats import poisson
 from math import ceil
 
@@ -138,6 +131,7 @@ def main(mFile,synapseFiles,preEI,preSpikes,savePath,T_MAX=100,activeSoma=False,
 
         # Add synapses to neuron model
         synParams,synTimes = addsyns(file,preEI,preSpikes,propofol)
+
         syn = list()
         for i in range(len(synParams)):
             syn.append(LFPy.Synapse(cell, **synParams[i]))

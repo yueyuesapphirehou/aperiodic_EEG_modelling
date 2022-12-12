@@ -1,27 +1,23 @@
 import sys
 import os
-sys.path.append('C:/Users/brake/Documents/pyNB')
-sys.path.append('C:/Users/brake/Documents/GitHub/aperiodic_EEG_modelling/simulations/functions')
-sys.path.append('C:/Users/brake/Documents/GitHub/aperiodic_EEG_modelling/simulations/_archive')
-import niktools as nt
 import numpy as np
 import LFPy
 import getMorphoSegments
 import csv
-import mat4py as m4p
 from neuron import h, load_mechanisms
-from matplotlib import pyplot as plt
 from scipy.stats import poisson
 from math import ceil
 
+
 class cortical_neuron():
+    mechanismFolder = os.path.join(os.path.dirname(__file__),'mod_files')
     def __init__(self,mFile,activeSoma=False):
         AXIAL_RESISTANCE        = 100
         EREV_LEAK               = -63       # Masoli et al
         G_LEAK                  = 0.0011
 
         pts3d,connections,segs,morphData = getMorphoSegments.morph2Segs(mFile)
-        load_mechanisms('C:/Users/brake/Documents/GitHub/aperiodic_EEG_modelling/simulations/_archive/_mod')
+        load_mechanisms(cortical_neuron.mechanismFolder)
         # List to record the type of neuron segment:
         # soma = 0, basal dendrite = 3, apical dendrite = 4
         secType = dict()

@@ -83,6 +83,9 @@ int computePairwiseCorrelation(int *data,int nWidth, int nHeight, char*saveFileN
     int j0;
     int overlapCounter;
     int totalCounter;
+
+    int *sparseCorrelationMatrix;
+    sparseCorrelationMatrix = malloc((sizeof(int)*2+sizeof(float)) * nHeight*nHeight);
     for (i = 0; i<nHeight; i++)
     {
         for (j = i+1; j<nHeight; j++)

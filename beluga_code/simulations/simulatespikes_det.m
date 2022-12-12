@@ -3,7 +3,7 @@ function [ids,ts,ei,C] = simulatespikes_det(N,branchNo,tmax,C)
 % branchNo = 0.98; 
 % N = 20000; 
 nNeigh = 4;
-if(nargin<3)
+if(nargin<4)
     C = randi(N,N,nNeigh);
     C = [repmat((1:N)',[1,4]),C];
     C = reshape(C,[],2);

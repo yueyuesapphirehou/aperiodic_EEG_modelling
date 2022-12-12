@@ -1,6 +1,5 @@
 import numpy as np
 from neuron import h
-from matplotlib import pyplot as plt
 import LFPy
 
 def morph2Segs(cellID):
@@ -61,16 +60,6 @@ def get_child(node,data):
     isChild = data[node-1:,-1]==node
     isDendrite = (data[node-1:,1]==3)+(data[node-1:,1]==4)
     return node+np.argwhere(isDendrite*isChild).flatten()
-
-
-def plot_morphology(segs,data):
-    fig = plt.figure()
-    ax = plt.axes(projection='3d')
-    for i in range(len(segs)):
-        X = data[segs[i]-1,2:5]
-        plt.plot(X[:,0],X[:,1],X[:,2])
-    axis_equal(ax)
-    plt.show()
 
 def axis_equal(ax):
     extents = np.array([getattr(ax, 'get_{}lim'.format(dim))() for dim in 'xyz'])

@@ -35,31 +35,47 @@ gIdcs = 1-EI;
 clrs = [1,0,0;0,0,1];
 clrs = clrs(gIdcs+1,:);
 
+% Remove points close to the corners of the plot (to avoid roll over variation being displayed)
+idcs1 = find(~and(PD_pol(:,1)<-0.85*pi,SD_pol(:,1)>0.85*pi));
+idcs2 = find(~and(PD_pol(:,2)<-0.85*pi/2,SD_pol(:,2)>0.85*pi/2));
+idcs = intersect(idcs1,idcs2);
+% Room for label
+idcs1 = find(~and(PD_pol(:,1)>0.85*pi,SD_pol(:,1)<0));
+idcs2 = find(~and(PD_pol(:,2)>0.75*pi/2,SD_pol(:,2)<0.5));
+idcs = intersect(idcs,intersect(idcs1,idcs2));
+% Make data sparse for display purposes
+idcs = idcs(randperm(size(idcs,1),400));
+
 fig = figureNB(5,2.75);
 ax(1) = axes('Position',[0.16,0.3,0.3,0.55]);
 ax(2) = axes('Position',[0.6,0.3,0.3,0.55]);
 for i = 1:2
     axes(ax(i));
-    scatter(SD_pol(:,i),PD_pol(:,i),2*dMag,clrs,'filled'); hold on;
-    FT = fitlm(SD_pol(:,i),PD_pol(:,i),'Weights',dMag);
+    scatter(SD_pol(idcs,i),PD_pol(idcs,i),dMag(idcs),'k','filled'); hold on;
+    FT = fitlm(SD_pol(idcs,i),PD_pol(idcs,i),'Weights',dMag(idcs))
     % plot([-1,1],FT.predict([-1;1]),'color','k');    R2(i) = FT.Rsquared.Adjusted;
 end
 axes(ax(1));
     gcaformat;
-    title('Azimuth','FontSize',7);
-    ylabel('Dipole orientation')
-    xlim([-pi,pi]); xticks([-pi,0,pi]); xticklabels({'-\pi','0','\pi'});
-    ylim([-pi,pi]); yticks([-pi,0,pi]); yticklabels({'-\pi','0','\pi'});
-    line([-pi,pi],[-pi,pi]);
-    % text(pi,-pi,sprintf('R^2=%.2f',R2(1)),'FontSize',6,'HorizontalAlignment','right','VerticalAlignment','bottom')
+    % title('Azimuth','FontSize',7);
+    ylabel('Dipole moment')
+    xlim([-pi,pi]); xticks([-pi,0,pi]);
+    ylim([-pi,pi]); yticks([-pi,0,pi]);
+    xticklabels({['-' '\pi'],'0',['\pi']});
+    yticklabels({['-' '\pi'],'0',['\pi']});
+    line([-pi,pi],[-pi,pi],'color','r');
+    text(-pi+0.4,pi+0.2,'Azimuth','FontSize',6,'HorizontalAlignment','left','VerticalAlignment','top')
 axes(ax(2));
     gcaformat;
-    title('Elevation','FontSize',7);
-    xlabel('Synapse orientation')
-    xlim([-pi,pi]/2); xticks([-pi/2,0,pi/2]); xticklabels({'-\pi/2','0','\pi/2'})
-    ylim([-pi,pi]/2); yticks([-pi/2,0,pi/2]); yticklabels({'-\pi/2','0','\pi/2'})
-    line([-pi,pi]/2,[-pi,pi]/2);
-    % text(pi/2,-pi/2,sprintf('R^2=%.2f',R2(2)),'FontSize',6,'HorizontalAlignment','right','VerticalAlignment','bottom')
+    % title('Elevation','FontSize',7);
+    xl = xlabel('Synapse location (rel. soma)');
+    xl.Position = [-2.2,-2.5,-1];
+    xlim([-pi,pi]/2); xticks([-pi/2,0,pi/2]);
+    ylim([-pi,pi]/2); yticks([-pi/2,0,pi/2]);
+    xticklabels({['-' '\pi' '/2'],'0',['\pi' '/2']})
+    yticklabels({['-' '\pi' '/2'],'0',['\pi' '/2']})
+    line([-pi,pi]/2,[-pi,pi]/2,'color','r');
+    text(-pi/2+0.2,pi/2+0.1,'Elevation','FontSize',6,'HorizontalAlignment','left','VerticalAlignment','top')
 gcaformat(fig);
 
 

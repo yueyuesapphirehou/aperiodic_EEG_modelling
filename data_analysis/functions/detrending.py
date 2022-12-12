@@ -149,7 +149,7 @@ def main(f,p,nPeaks=3,fitType='exp2',sp_ap=list()):
     # Periodic parameter bounds
     lb_p = [0,0,0.2,6,0,0.6,15,0,1,2,0,0.4]
     ub_p = [3,4,3,15,4,4,40,3,10,5,2,2]
-    sp_p = [0.5,2,1.5,11,0.3,1,22,0.1,4,4,0,1]
+    sp_p = [0.5,2,1.5,8,0.3,1,22,0.1,4,4,0,1]
     lb_p = lb_p[:3*nPeaks]
     ub_p = ub_p[:3*nPeaks]
     startpoint = sp_ap + sp_p[:3*nPeaks]

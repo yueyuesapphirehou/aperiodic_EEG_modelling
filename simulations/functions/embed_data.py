@@ -17,7 +17,8 @@ def load_spike_correlations(filename):
 
 def sphere_embed(d):
     # Run UMAP on functional correlation matrix and plot
-    sphere_mapper = umap.UMAP(output_metric='haversine', random_state=42, low_memory=True).fit(d)
+    # sphere_mapper = umap.UMAP(output_metric='haversine').fit(d)
+    sphere_mapper = umap.UMAP(output_metric='haversine', low_memory=True).fit(d)
     x = np.sin(sphere_mapper.embedding_[:, 0]) * np.cos(sphere_mapper.embedding_[:, 1])
     y = np.sin(sphere_mapper.embedding_[:, 0]) * np.sin(sphere_mapper.embedding_[:, 1])
     z = np.cos(sphere_mapper.embedding_[:, 0])

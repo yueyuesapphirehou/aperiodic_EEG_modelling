@@ -117,8 +117,9 @@ axes('Position',[0.79,0.72,0.2,0.18]);
     ylim([-2.5,15])
     ylabel('Power (dB)');
     xlabel('Rescaled time')
-    xticks([-1,-0.5,0]);
-    xticklabels([0,0.5,1]);
+    xticks([-1,0]);
+    % xticklabels([0,0.5,1]);
+    xticklabels({'Infusion','LOC'})
     line([-1.5,0.5],[0,0],'color','k');
     text(-1.15,13,'Alpha (8-15 Hz)','FontSize',7,'Color',clrs(1,:));
     text(-1.15,11,'Beta (15-30 Hz)','FontSize',7,'Color',clrs(2,:));
@@ -171,8 +172,9 @@ axes('Position',[0.79,0.4,0.2,0.18]);
      ylim([-2.5,6])
      ylabel('Power (dB)');
      xlabel('Rescaled time')
-     xticks([-1,-0.5,0]);
-     xticklabels([0,0.5,1]);
+     xticks([-1,0]);
+     % xticklabels([0,0.5,1]);
+     xticklabels({'Infusion','LOC'})
      line([-1.5,0.5],[0,0],'color','k');
 synPost = [0.047,0.0075,-14.25,4.3];
 axes('Position',[0.09,0.08,0.11,0.14]);
@@ -221,8 +223,9 @@ axes('Position',[0.79,0.08,0.2,0.18]);
     xlim([-1.25,0.25]);
     ylabel('Power (dB)');
     xlabel('Rescaled time')
-    xticks([-1,-0.5,0]);
-    xticklabels([0,0.5,1]);
+    xticks([-1,0]);
+    % xticklabels([0,0.5,1]);
+    xticklabels({'Infusion','LOC'})
     line([-1.5,0.5],[0,0],'color','k');
     ylim([-2.5,5])
 
@@ -262,47 +265,3 @@ A.String = 'Lorentzian detrended';
 A.FontSize = 7;
 A.FontWeight = 'normal';
 A.Position(3) = 0.3;
-
-
-
-
-[full_model,synFun] = fittingmodel;
-tRescaled = linspace(-1.5,0.5,200);
-folder = 'E:\Research_Projects\004_Propofol\data\experiments\scalp_EEG\model_fits\rescaled_manual\fitted';
-for i = 1:14
-    load(fullfile(folder,['pt' int2str(i) '_rescaled_28-Sep-2022.mat']));
-    params(:,:,i) = pars;
-end
-ff = 0.5:0.5:150;
-for i = 1:14
-    for j = 1:size(params,2)
-        ptBL(:,j,i) = synFun(ff,params(:,j,i));
-    end
-end
-
-figureNB;
-    N = 5;
-    m = 3;
-    clrs = clrsPT.sequential(N+m);
-    clrs = clrs(1+m:end,:);
-    idcs = find(and(tRescaled>-1,tRescaled<0));
-    k = floor(length(idcs)/N);
-    for i = 1:N
-        BL = mean(mean(ptBL(:,idcs(k*(i-1)+1:k*i),:),2),3);
-        plot(ff,10.^BL,'color',clrs(i,:),'LineWidth',1); hold on;
-    end
-    set(gca,'xscale','log')
-    set(gca,'yscale','log')
-    xlim([0.5,100])
-    xticks([1,10,100])
-    gcaformat
-    xlabel('Frequency (Hz)')
-    ylabel(['PSD (' char(956) 'V^2/Hz)'])
-
-colormap(clrs)
-CB = colorbar('location','south');
-CB.TickLabels = {'Infusion','LOC'};
-CB.Label.String = 'Rescaled time';
-CB.TickDirection = 'out';
-CB.TickLength = 0.05;
-CB.Ticks = [0.5/N,1-0.5/N];
