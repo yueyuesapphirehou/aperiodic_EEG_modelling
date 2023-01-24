@@ -33,10 +33,17 @@ def load_spike_times(spikingFile):
     return preEI,preSpikes
 
 def addsyns(nrnID,meta_data,preEI,preSpikes,propofol):
-    # tau = int(propofol/100)
-    # remainder = propofol-tau*100
-    # tau_change = int(remainder/10)
-    # weight_change = remainder-tau_change*10
+    SYANPSE_FAILURE_RATE = 0.7
+    if(propofol>100):
+        tau = int(propofol/100)
+        remainder = propofol-tau*100
+        tau_change = int(remainder/10)
+        weight_change = remainder-tau_change*10
+    else:
+        tau = 23
+        tau_change = 1+2*propofol
+        weight_change = 1+0*propofol
+
     EX_PARAMS = {'idx': 0,
                     'e': 0,
                     'syntype': 'Exp2Syn',
@@ -48,12 +55,13 @@ def addsyns(nrnID,meta_data,preEI,preSpikes,propofol):
                     # 'e': -75,
                     'e':-80,
                     'syntype': 'Exp2Syn',
-                    'tau1': 2,
-                    'tau2': 13,
-                    # 'tau2': tau*tau_change,
-                    'weight': 0.0014, # uS
-                    # 'weight': 0.0014*weight_change, # uS
+                    'tau1': 1,
+                    # 'tau2': 13*(1+propofol*2),
+                    'tau2': tau*tau_change,
+                    # 'weight': 0.0014*(1+propofol*0), # uS
+                    'weight': 0.0007*weight_change, # uS
                     'record_current': False}
+
     synSeg = meta_data['synSeg'][nrnID]
     synPre = meta_data['synPre'][nrnID]
     synTimes = list()
@@ -61,6 +69,8 @@ def addsyns(nrnID,meta_data,preEI,preSpikes,propofol):
     # Get excitatory syanpse locations
     for i in range(len(synSeg)):
         ts = preSpikes[synPre[i]]
+        spikeSelection = np.random.binomial(len(ts),1-SYANPSE_FAILURE_RATE)
+        ts = np.random.choice(ts,spikeSelection,replace=False).tolist()
         if(preEI[synPre[i]]):
             params = IN_PARAMS.copy()
         else:

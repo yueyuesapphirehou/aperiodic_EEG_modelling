@@ -17,7 +17,7 @@ from math import ceil
 class cortical_neuron():
     def __init__(self,mFile,activeSoma=False):
         AXIAL_RESISTANCE        = 100
-        EREV_LEAK               = -63       # Masoli et al
+        EREV_LEAK               = -55
         G_LEAK                  = 0.0011
 
         pts3d,connections,segs,morphData = getMorphoSegments.morph2Segs(mFile)

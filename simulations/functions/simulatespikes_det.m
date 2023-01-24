@@ -1,6 +1,6 @@
 function [ids,ts,ei,C,m0] = simulatespikes_det(N,branchNo,tmax,C,nNeigh)
 
-dt = 4e-3;
+dt = 16e-3;
 if(nargin<5)
     nNeigh = 4;
 end
@@ -50,7 +50,7 @@ m0 = zeros(tN-1,1);
 m0(1) = branchNo;
 
 exN = poissrnd(lamE*dt*N*(1-branchNo),tN,1);
-lamE = 1+0.6*sin(2*pi*t*10);
+lamE = 1+0*0.6*sin(2*pi*t*10);
 
 for i = 2:tN-1
     % Get spiking cells at previous time point
@@ -78,12 +78,12 @@ for i = 2:tN-1
 
     % Add propogated spikes
     ids(count+1:count+nTrans) = postI;
-    ts(count+1:count+nTrans) = t(i)+dt*rand(nTrans,1);;
+    ts(count+1:count+nTrans) = t(i)+ dt*rand(nTrans,1);;
     count = count+nTrans;
 
     % Add external noise
     ids(count+1:count+exN(i)) = randperm(N,exN(i));
-    ts(count+1:count+exN(i)) = t(i)+dt*rand(exN(i),1);
+    ts(count+1:count+exN(i)) = t(i)+ dt*rand(exN(i),1);
     count = count+exN(i);
     nTrans = nTrans + exN(i);
 end
@@ -100,7 +100,7 @@ NI = ceil(0.2*N);
 for i = 1:tN-1
     nTrans = poissrnd(B(i)*dt*NI,1,1);
     ids(count+1:count+nTrans) = randperm(NI,nTrans)+N-NI;
-    ts(count+1:count+nTrans) = t(i)+dt*rand(nTrans,1);
+    ts(count+1:count+nTrans) = t(i)+ dt*rand(nTrans,1);
     count = count+nTrans;
 end
 ts(count+1:end) = [];

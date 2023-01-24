@@ -1,6 +1,6 @@
 addpath('C:\Users\brake\Documents\MATLAB\fmriView')
 % Get surface area of each triangle
-% [sa,X] = network_simulation.getHeadModel;
+[sa,X] = network_simulation.getHeadModel;
 x0 = [54,24,35];
 [~,i0] = min(vecnorm(X.vertices-x0,2,2));
 j0 = find(sum(X.faces==i0,2));
@@ -129,7 +129,7 @@ rho_bar = sum(corr_kernel(dMids).*nrnCount)/sum(nrnCount');
 SIG_N = @(rho) N+N*(N-1)*rho;
 
 load('E:\Research_Projects\004_Propofol\data\experiments\scalp_EEG\model_fits\pre.mat');
-load('E:\Research_Projects\004_Propofol\data\simulations\analyzed\network_criticality_spectra_(s=1).mat')
+load('E:\Research_Projects\004_Propofol\data\simulations\analyzed\_archive\network_criticality_spectra_(s=1).mat')
 asynchUnitarySpec = mean(mean(P(:,:,:),3),2);
 SIG0 = mean(sum(asynchUnitarySpec*mean(diff(f))));
 P0 = interp1(f,asynchUnitarySpec,freq);

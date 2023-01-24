@@ -2,20 +2,24 @@ classdef network_simulation_beluga
 
     properties
         tmax
-        branchingIdx
+        branchNo
         neurons
         outputPath
         postNetwork
         preNetwork
         spikingFile
         savePath
-        results = struct('t',[],'dipoles',[],'Vmem',[]);
     end
 
     properties (Constant)
         % resourceFolder = '/home/nbrake/data/resources';
         resourceFolder = 'E:/Research_Projects/004_Propofol/data/resources';
         functionFolder = fileparts(mfilename('fullpath'));
+        eiFraction = 0.85;
+        eFiringRate = 0.5; % Hz
+        iFiringRate = 2.5; % Hz
+        eMulti = 3.6; % Syanpses/connections
+        iMulti = 13.9; % Syanpses/connections
     end
 
     properties (Access = private)
@@ -28,15 +32,11 @@ classdef network_simulation_beluga
         neuronTypes = {'L23E_oi24rpy1';'L23I_oi38lbc1';'L23I_oi38lbc1';'L4E_53rpy1';'L4E_j7_L4stellate';'L4E_j7_L4stellate';'L4I_oi26rbc1';'L4I_oi26rbc1';'L5E_oi15rpy4';'L5E_j4a';'L5I_oi15rbc1';'L5I_oi15rbc1';'L6E_51_2a_CNG';'L6E_oi15rpy4';'L6I_oi15rbc1';'L6I_oi15rbc1'};
         nrnAbundance = [26.8,3.2,4.3,9.5,9.5,9.5,5.6,1.5,4.9,1.3,0.6,0.8,14,4.6,1.9,1.9]/100
         dendriteLengths = [9319,4750,4750,7169,4320,4320,2359,2359,14247,5720,5134,5134,5666,6183,5134,5134];
-        samplingFrequency = 16000
         activeConductances = false
         propofol = 0
         synapseCount
         morphoCounts
         correlationFile
-        eiFraction = 0.85;
-        eFiringRate = 1; % Hz
-        iFiringRate = 6.67; % Hz
     end
 
     methods
@@ -55,6 +55,56 @@ classdef network_simulation_beluga
                 mkdir(obj.preNetwork);
                 mkdir(obj.savePath);
             end
+        end
+
+        function obj = setsynapsecount(obj,N)
+            obj.synapseCount = N;
+        end
+
+        function obj = setSpikingFile(obj,filename)
+            obj.spikingFile = filename;
+        end
+
+        function obj = setSavePath(obj,pathName)
+            obj.savePath = pathName;
+        end
+
+        function obj = setFiringRate(obj,lambdaE,lambdaI)
+            obj.eFiringRate = lambdaE;
+            obj.iFiringRate = lambdaI;
+        end
+
+        function network = setCorrelationFile(network,file)
+            network.correlationFile = file;
+        end
+
+        function obj = setPostNetwork(obj,pathName)
+            obj.postNetwork = pathName;
+        end
+
+        function obj = addActiveChannels(obj,toAdd)
+            if(nargin<2)
+                obj.activeConductances = true;
+            else
+                obj.activeConductances = toAdd;
+            end
+        end
+
+        function obj = addPropofol(obj,x)
+            if(nargin<2)
+                obj.propofol = 1;
+            else
+                obj.propofol = x;
+            end
+            % obj.eFiringRate = obj.eFiringRate*0.5;
+        end
+
+        function file = getCorrelationFile(network)
+            file = network.correlationFile;
+        end
+
+        function N = getsynapsecount(obj)
+            N = obj.synapseCount;
         end
 
         function obj = initialize_postsynaptic_network(obj,neuronCount,randMorphos)
@@ -105,7 +155,7 @@ classdef network_simulation_beluga
         function obj = initialize_presynaptic_network(obj,m,tmax);
         % Generate presynaptic spike times and place synapse locations on postsynaptic network.
         % Postsynapse network must first be initalized.
-            obj.branchingIdx = m;
+            obj.branchNo = m;
             if(isempty(obj.synapseCount))
                 error('Must initialize postsynaptic network first.')
             end
@@ -142,200 +192,122 @@ classdef network_simulation_beluga
                 coordination_index = 0;
             end
 
+            % Get IDs for multiple synapses/connection (ensure they end up on the same postsyanptic neurons)
+            if(exist(fullfile(obj.preNetwork,'multisynapse_IDs.csv')))
+                multID = csvread(fullfile(obj.preNetwork,'multisynapse_IDs.csv'));
+            else
+                multID = -ones(obj.synapseCount,1);
+            end
+            mutliK = obj.eiFraction*obj.eMulti+(1-obj.eiFraction)*obj.iMulti;
+            multiN = ceil(min(sum(multID==-1),obj.synapseCount)/mutliK);
+            parentSynapses = find(multID==-1);
+
             % Load neuron segment locations projected onto sphere
             load(fullfile(network_simulation_beluga.resourceFolder,'cortical_column_Hagen','segment_areas.mat'))
-            mTypes = unique(obj.neuronTypes);
-            mPresent = find(obj.morphoCounts>0);
-            mTypes = mTypes(mPresent);
-            morphCounts = obj.morphoCounts(mPresent);
-            morphCounts = morphCounts(:);
 
-            X = []; Y = []; Z = []; nrnID = []; segID = []; SA = {}; contIdx = {};
-            counter = 0;
-            counter2 = 1;
-            for i = 1:length(mTypes)
-                mData = nrnSegs.(mTypes{i});
-                N = length(mData.area);
-                pos = [mean(mData.x,2),mean(mData.y,2),mean(mData.z,2)];
-                segDir = pos./vecnorm(pos,2,2);
-                nullIdcs = find(sum(isnan(segDir),2));
-                segDir(nullIdcs,:) = segDir(randi(N,length(nullIdcs)),:);
-                X = [X;segDir(:,1)];
-                Y = [Y;segDir(:,2)];
-                Z = [Z;segDir(:,3)];
-                segID = [segID;(1:N)'];
-                SA{i} = mData.area(:);
-                contIdx{i} = (1:N)'+counter;
-                counter = counter+N;
-                for j = 1:morphCounts(i)
-                    nrnID = [nrnID; counter2*ones(N,1)];
-                    counter2 = counter2+1;
-                end
+            % Embed dendrites of each postsyanptic neuron onto sphere
+            dendriteEmbedding = cell(length(obj.neurons),1);
+            dendriteAreas = cell(length(obj.neurons),1);
+            neuronArea = zeros(length(obj.neurons),1);
+            for i = 1:length(obj.neurons)
+                mData = nrnSegs.(obj.neurons(i).mType);
+                x = mean(mData.x,2);
+                y = mean(mData.y,2);
+                z = mean(mData.z,2);
+                D = vecnorm([x,y,z],2,2);
+                [theta,phi] = cart2sph(x./D,y./D,z./D);
+                dendriteEmbedding{i} = [phi(:),theta(:)];
+                dendriteAreaCDF{i} = cumsum(mData.area)/sum(mData.area);
+                neuronArea(i) = sum(mData.area);
             end
-            dendriteEmbedding = [X,Y,Z];
-
-            % Randomly draw neuron segments from postsynaptic population,
-            % proportionally to segment surface area
-            mcs = mat2cell(morphCounts,ones(length(contIdx),1))';
-            sa = cellfun(@(x,y) repmat(x,[y,1]),SA,mcs,'UniformOutput',false);
-            sa = cat(1,sa{:});
-            contIdx = cellfun(@(x,y) repmat(x,[y,1]),contIdx,mcs,'UniformOutput',false);
-            contIdx = cat(1,contIdx{:});
-
-            saCDF = cumsum(sa)/sum(sa);
-            iSegsPooled = interp1(saCDF,1:length(saCDF),rand(obj.synapseCount,1),'next','extrap');
-            iSegs = contIdx(iSegsPooled);
 
             % If the syanpses are not placed randomly, perform UMAP on spike train correlation matrix to embed functionally similar presynaptic neurons close to each other
             % Location of synaspes are perturbed away from optimal positions by an amount determined by coordination_index between 0 and 1.
             if(coordination_index>0)
-                [synapseEmbedding,idPreSyn] = obj.embedPresynapticNetwork();
+                [synapseEmbedding,idPreSyn] = network_simulation_beluga.loadSynapseLocations(fullfile(obj.preNetwork,'UMAP_embedding.csv'),obj.synapseCount);
                 synapseEmbedding = network_simulation_beluga.perturbSynapsePositions(synapseEmbedding,1-coordination_index);
-
-                % Convert to spherical coordinates to compute Haversine distances
                 [theta,phi] = cart2sph(synapseEmbedding(:,1),synapseEmbedding(:,2),synapseEmbedding(:,3));
-                synapseEmbedding = [phi(:),theta(:)];
-                [theta,phi] = cart2sph(dendriteEmbedding(:,1),dendriteEmbedding(:,2),dendriteEmbedding(:,3));
-                dendriteEmbedding = [phi(:),theta(:)];
+            else
+                M = length(multID);
+                theta = asin(2*rand(M,1)-1);
+                phi = 2*pi*rand(M,1);
+                idPreSyn = 1:M;
+            end
+            synapseEmbedding = [phi(:),theta(:)];
 
+            % Assign presynaptic neurons to postsynaptic neurons based on total surface area
+            % postNeuronList = zeros(obj.synapseCount,1);
+            if(length(obj.neurons)>1)
+                saCDF = cumsum(neuronArea)/sum(neuronArea);
+                postNeuronList = interp1(saCDF,1:length(saCDF),rand(obj.synapseCount,1),'next','extrap');
+            else
+                postNeuronList = ones(obj.synapseCount,1);
+            end
 
-                % Greedy algorithm. For each neuron segment select the presynaptic neuron closest on the sphere embedding
-                syn = zeros(size(iSegs));
-                remainingSyns = true(size(synapseEmbedding,1),1);
-                for i = 1:obj.synapseCount
-                    D = 1-haversine_distance(dendriteEmbedding(iSegs(i),:),synapseEmbedding);
+            % Greedy algorithm. Draw dendrites segments and select closest synapse
+            segmentList = zeros(obj.synapseCount,1);
+            synapseList = zeros(obj.synapseCount,1);
+            remainingSyns = true(length(parentSynapses),1);
+            multiSynapses = cell(length(obj.neurons),1);
+            count = 1;
+            N = length(parentSynapses);
+            while( (count< N) && (length(cat(1,multiSynapses{:})) < obj.synapseCount))
+                % Choose random dendrite segment based on surface area
+                postNeuron = postNeuronList(count);
+                segment = interp1(dendriteAreaCDF{postNeuron},1:length(dendriteAreaCDF{postNeuron}),rand,'next','extrap');
+
+                % Choose presynaptic neuron
+                if(any(isnan(dendriteEmbedding{postNeuron}(segment,:))))
+                    % If segment is soma, choose a synapse uniformly
+                    iClosest = randsample(find(remainingSyns),1);
+                else
+                    % Find presynaptic neuron closest to segment
+                    D = 1-haversine_distance(dendriteEmbedding{postNeuron}(segment,:),synapseEmbedding(parentSynapses,:));
                     [~,iClosest] = max(D.*remainingSyns);
-                    syn(i) = idPreSyn(iClosest);
+                end
+                remainingSyns(iClosest) = false;
+                parentSynapseID = idPreSyn(parentSynapses(iClosest));
+
+                % Form synapse
+                postNeuronList(count) = postNeuron;
+                segmentList(count) = segment;
+                synapseList(count) = parentSynapseID;
+                count = count + 1;
+
+                % Find all other terminals from presynaptic neuron
+                multiSynapses{postNeuron} = [multiSynapses{postNeuron};find(multID(:)==parentSynapseID)];
+            end
+
+            % For each postsynaptic neuron, draw segments and add multisynapses
+            for postNeuron = 1:length(obj.neurons)
+                % Total number of multisynapses
+                multiSyns = multiSynapses{postNeuron};
+                allSegments = interp1(dendriteAreaCDF{postNeuron},1:length(dendriteAreaCDF{postNeuron}),rand(1,length(multiSyns)),'next','extrap');
+                remainingSyns = true(length(multiSyns),1);
+                for segment = allSegments
+                    % Choose presynaptic neuron
+                    if(any(isnan(dendriteEmbedding{postNeuron}(segment,:))))
+                        % If segment is soma, choose a synapse uniformly
+                        iClosest = randsample(find(remainingSyns),1);
+                    else
+                        % Find presynaptic neuron closest to segment
+                        D = 1-haversine_distance(dendriteEmbedding{postNeuron}(segment,:),synapseEmbedding(multiSyns,:));
+                        [~,iClosest] = max(D.*remainingSyns);
+                    end
                     remainingSyns(iClosest) = false;
+                    parentSynapseID = idPreSyn(multiSyns(iClosest));
+
+                    % Form synapse
+                    postNeuronList(count) = postNeuron;
+                    segmentList(count) = segment;
+                    synapseList(count) = parentSynapseID;
+                    count = count + 1;
                 end
-            else
-                syn = randperm(obj.synapseCount);
             end
 
-            % Save connections in seperate csv files for each neuron
-            % First column inidicates the segment number and the
-            % second column indicates the pre synaptic neuron ID
-            data = zeros(obj.synapseCount,3);
-            for i = 1:obj.synapseCount
-                j = nrnID(iSegsPooled(i));
-                seg = segID(iSegs(i));
-                pre = syn(i);
-                data(i,:) = [j,seg,pre];
-            end
+            % Save connections in seperate csv file
+            data = [postNeuronList(:),segmentList(:),synapseList(:)];
             dlmwrite(fullfile(obj.postNetwork,'connections.csv'),data,'delimiter',',','precision','%d');
-            % for j = 1:length(obj.neurons)
-            %     simID = obj.neurons(j).name;
-            %     filename = fullfile(obj.postNetwork,'connections',[simID '.csv']);
-            %     fid = fopen(filename,'w');
-            %     idcs = find(data(:,1)==j);
-            %     for i = 1:length(idcs)
-            %         fprintf(fid,'%s,%s\n',int2str(data(idcs(i),2)),int2str(data(idcs(i),3)));
-            %     end
-            %     fclose(fid);
-            % end
-        end
-
-        function [embedding,idPreSyn] = embedPresynapticNetwork(obj)
-            N = obj.synapseCount;
-            embedding = zeros(N,3);
-            idPreSyn = 1:N;
-
-            correlationFile = obj.correlationFile;
-            if(~exist(correlationFile))
-                error('Correlation file must be pre computed using function "compute_presynaptic_correlations"');
-            end
-
-            % Run UMAP using python module
-            % Haversine metric allows embedding data onto a sphere
-            pyFun = obj.embeddingFunction;
-            umapFile = fullfile(obj.preNetwork,'UMAP_embedding.csv');
-            if(~exist(umapFile))
-                [err,prints] = system(['python "' pyFun '" ' correlationFile ' ' umapFile]);
-                if(err)
-                    error(prints);
-                end
-            end
-            data = csvread(umapFile);
-            [x,y,z] = sph2cart(data(:,2),data(:,3)+pi/2,data(:,3)*0+1);
-            M = size(data,1);
-
-            if(M>N)
-                temp = [x(:),y(:),z(:)];
-                idcs = randperm(size(x,1),N);
-                embedding = temp(idcs,:);
-                idPreSyn = data(idcs,1);
-            elseif(M<N)
-                idcs0 = data(:,1)+1;
-                embedding(idcs0,:) = [x(:),y(:),z(:)];
-                idcs1 = setdiff(idPreSyn,idcs0);
-
-                % Place all the left over synapses, i.e. those that were not correlated, randomly on the sphere
-                K = N-M;
-                elevation = asin(2*rand(K,1)-1);
-                azimuth = 2*pi*rand(K,1);
-                [x,y,z] = sph2cart(azimuth,elevation,1);
-                uncorrelated = [x,y,z];
-                embedding(idcs1,:) = uncorrelated;
-            else
-                embedding = [x(:),y(:),z(:)];
-            end
-        end
-
-        function obj = compute_presynaptic_correlations(obj,spikingFile)
-            % Get pairwise correlation matrix among all presynaptic
-            % neurons based on spike trains (sparse)
-            obj.correlationFile = fullfile(obj.preNetwork,'correlations.csv');
-            % corrFile = fullfile(obj.preNetwork,'correlations2.csv');
-            if(exist(obj.correlationFile))
-                disp('Correlation file already exists.');
-                return;
-            end
-            if(nargin<2)
-                spikingFile = obj.spikingFile;
-            end
-            [err,prints] = system([obj.correlationFunction ' ' spikingFile ' ' obj.correlationFile]);
-            if(err~=0)
-                error(sprintf('%d: %s',err,prints));
-            end
-        end
-
-        function obj = addActiveChannels(obj,toAdd)
-            if(nargin<2)
-                obj.activeConductances = true;
-            else
-                obj.activeConductances = toAdd;
-            end
-        end
-
-        function obj = addPropofol(obj,x)
-            if(nargin<2)
-                obj.propofol = 1;
-            else
-                obj.propofol = x;
-            end
-            % obj.eFiringRate = obj.eFiringRate*0.5;
-        end
-
-        function obj = setSpikingFile(obj,filename)
-            obj.spikingFile = filename;
-        end
-
-        function obj = setSavePath(obj,pathName)
-            obj.savePath = pathName;
-        end
-
-        function obj = setPostNetwork(obj,pathName)
-            obj.postNetwork = pathName;
-        end
-
-        function params = getSimulationParams(obj)
-            params.postNetwork = strrep(obj.postNetwork,'\','\\');
-            params.spikingFile = strrep(obj.spikingFile,'\','\\');
-            params.outputPath = strrep(obj.outputPath,'\','\\');
-            params.tmax = obj.tmax+100;
-            params.soma = char(string(obj.activeConductances))
-            params.propofol = obj.propofol;
-            params.simulateFunction = strrep(obj.simulateFunction,'\','\\');
         end
 
         function obj = simulate(obj)
@@ -361,114 +333,30 @@ classdef network_simulation_beluga
             pySimulate(obj.savePath,fullfile(network_simulation_beluga.functionFolder,'npy2mat.py'));
         end
 
+        function obj = compute_presynaptic_correlations(obj,spikingFile)
+            % Get pairwise correlation matrix among all presynaptic
+            % neurons based on spike trains (sparse)
+            obj.correlationFile = fullfile(obj.preNetwork,'correlations.csv');
+            % corrFile = fullfile(obj.preNetwork,'correlations2.csv');
+            if(exist(obj.correlationFile))
+                disp('Correlation file already exists.');
+                return;
+            end
+            if(nargin<2)
+                spikingFile = obj.spikingFile;
+            end
+            [err,prints] = system([obj.correlationFunction ' ' spikingFile ' ' obj.correlationFile]);
+            if(err~=0)
+                error(sprintf('%d: %s',err,prints));
+            end
+        end
+
         function save(obj,filename)
             if(nargin<2)
                 filename = 'data.mat';
             end
             network = obj;
             save(fullfile(obj.outputPath,filename),'network');
-        end
-
-        function N = getsynapsecount(obj)
-            N = obj.synapseCount;
-        end
-
-        function obj = setsynapsecount(obj,N)
-            obj.synapseCount = N;
-        end
-
-        function obj = importResults(obj)
-            k = 1;
-            n = length(obj.neurons);
-            for i = 1:n
-                data = csvread(obj.neurons(i).sim,1,0);
-                t = data(:,1);
-                if(i==1)
-                    Q = zeros([size(data,1),3,n]);
-                    V = zeros([size(data,1),n]);
-                end
-                Q(:,:,k) = data(:,2:4);
-                V(:,k) = data(:,5);
-                k = k+1;
-            end
-            Q = [Q(:,1,:),-Q(:,3,:),Q(:,2,:)];
-            Q = Q(t>=100,:,:);
-            V = V(t>=100,:,:);
-            t = t(t>=100); t = t-100;
-            obj.results.t = t;
-            obj.results.dipoles = Q;
-            obj.results.Vmem = V;
-        end
-
-        function [f,P] = expectedEEGspectrum(obj,neuronIDs,sa,idcs)
-            if(isempty(neuronIDs))
-                neuronIDs = 1:length(obj.neurons);
-            end
-            if(nargin<4)
-                idcs = sa.cortex2K.in_from_cortex75K;
-            end
-
-            for j = 1:length(neuronIDs);
-                temp = resample(obj.results.dipoles(2:end,:,neuronIDs(j)),2e3,16e3);
-                if(j==1)
-                    dp = zeros(size(temp,1),3,length(neuronIDs));
-                end
-                dp(:,:,j) = temp;
-            end
-            q = gpuArray(dp);
-            t = obj.results.t;
-
-            h = waitbar(0);
-            for j = 1:length(idcs)
-                waitbar(j/length(idcs),h);
-                eeg = network_simulation_beluga.getEEG(q,sa,idcs(j));
-                temp = mypmtm(eeg,2e3,2);
-               if(j==1)
-                    P = zeros(size(temp));
-                end
-                P = P+temp;
-            end
-            close(h);
-            P = P/length(idcs)*pi/2;
-            f = 0.5:0.5:1e3;
-        end
-
-        function [f,P] = getUnitarySpectrum(obj,neuronIDs,sa,idcs,toSum)
-            if(isempty(neuronIDs))
-                neuronIDs = 1:length(obj.neurons);
-            end
-            if(nargin<3)
-                idcs = sa.cortex2K.in_from_cortex75K;
-            end
-            if(nargin==5 && toSum)
-                q = sum(obj.results.dipoles(:,:,neuronIDs),3);
-            else
-                q = obj.results.dipoles(:,:,neuronIDs);
-            end
-            h = waitbar(0);
-            for i = 1:length(idcs)
-                waitbar(i/length(idcs),h);
-                eeg = network_simulation_beluga.getEEG(q,sa,idcs(i));
-                [temp,f] = pmtm(eeg,2,[],1e3*16);
-                if(i==1);
-                    P = zeros(size(temp));
-                end
-                P = P + temp;
-            end
-            close(h);
-            P = P/length(idcs);
-        end
-
-        function obj = setFiringRate(obj,lambdaE,lambdaI)
-            obj.eFiringRate = lambdaE;
-            obj.iFiringRate = lambdaI;
-        end
-        function network = setCorrelationFile(network,file)
-            network.correlationFile = file;
-        end
-
-        function file = getCorrelationFile(network)
-            file = network.correlationFile;
         end
 
         function network2 = copy_network(obj,newPath)
@@ -566,12 +454,219 @@ classdef network_simulation_beluga
             spikeTime = 1e3*spikeTime(I);
         end
 
+        function [ids,ts,ei] = simulatespikes_critplane(obj,N,tmax)
+
+            % N = 30000; % Size of presyanptic network
+            tmax = tmax*1e-3;
+
+            % Number of E and I synapses
+            N_ex_syn = floor(obj.eiFraction*N);
+            N_in_syn = N-N_ex_syn;
+
+            % Multisynapse count (predicted by Markram et al., Cell 2015)
+            N_ex_pre = ceil(N_ex_syn/obj.eMulti);
+            N_in_pre = ceil(N_in_syn/obj.iMulti);
+
+            % Initialize
+            ei = [zeros(1,N_ex_syn),ones(1,N_in_syn)];
+            idsE = -ones(ceil(2*N_ex_pre*tmax),1);
+            tsE = -ones(ceil(2*N_ex_pre*tmax),1);
+
+            % Network topology
+            elevation_E = rand(N_ex_pre,1);
+            azimuth_E = rand(N_ex_pre,1);
+            dist_metric = @(x,y)vecnorm(x-y,2,2);
+            nNeigh = 10;
+            C = zeros(N_ex_pre*nNeigh,3);
+            D1 = exprnd(0.02,nNeigh,N_ex_pre);
+            for i = 1:N_ex_pre
+                D0 = dist_metric([elevation_E(i),azimuth_E(i)],[elevation_E,azimuth_E]);
+                D0(1) = Inf;
+                idcs = 1:length(D0);
+                for j = 1:nNeigh
+                    [~,jj] = min(abs(D0(idcs)-D1(j,i)));
+                    I(j) = idcs(jj);
+                    idcs(jj) = [];
+                end
+                % [~,I] = sort(D0,'ascend'); I = I(2:nNeigh+1);
+                C(nNeigh*(i-1)+1:nNeigh*i,1) = i*ones(nNeigh,1);
+                C(nNeigh*(i-1)+1:nNeigh*i,2) = I;
+            end
+            C(:,3) = obj.branchNo/nNeigh;
+
+            % Look up table for node indices
+            for i = 1:N_ex_pre
+                CLUT{i} = find(C(:,1)==i);
+            end
+
+            % Simulation parameters
+            dt = 4e-3;
+            t = 0:dt:tmax;
+            tN = length(t);
+
+            % Random external input
+            nTrans = poissrnd(obj.eFiringRate*dt*N_ex_pre);
+            idsE(1:nTrans) = randperm(N_ex_pre,nTrans);
+            post = idsE(1:nTrans);
+            k = nTrans;
+            tsE(1:nTrans) = t(1)*ones(nTrans,1);
+            count = nTrans;
+
+            exN = poissrnd(obj.eFiringRate*dt*N_ex_pre*(1-obj.branchNo),tN,1);
+
+            for i = 2:tN-1
+                % Get spiking cells at previous time point
+                % preI = unique(idsE(count-nTrans+1:count));
+                preI = idsE(count-nTrans+1:count);
+                jj = cat(1,CLUT{preI});
+
+                % For each spiking cell, find neighbours...
+                postI = C(jj,2);
+                % ... and start flipping coins
+                iTrans = find(rand(length(jj),1)<C(jj,3));
+                postI = postI(iTrans);
+                nTrans = length(postI);
+
+                % Add propogated spikes
+                idsE(count+1:count+nTrans) = postI;
+                tsE(count+1:count+nTrans) = t(i)+dt*rand(nTrans,1);;
+                count = count+nTrans;
+
+                % Add external noise
+                idsE(count+1:count+exN(i)) = randperm(N_ex_pre,exN(i));
+                tsE(count+1:count+exN(i)) = t(i)+dt*rand(exN(i),1);
+                count = count+exN(i);
+                nTrans = nTrans + exN(i);
+            end
+            tsE(count:end) = [];
+            idsE(count:end) = [];
+
+            % Look up table for excitatory spike times
+            speLUT = cell(N_ex_pre,1);
+            for j = 1:N_ex_pre
+                speLUT{j} = find(idsE==j);
+            end
+
+            % Inhibitory neurons follow nearby excitatory neurons
+            elevation_I = rand(N_in_pre,1);
+            azimuth_I = rand(N_in_pre,1);
+            idsI = -ones(ceil(10*N_in_pre*tmax),1);
+            tsI = -ones(ceil(10*N_in_pre*tmax),1);
+            count = 0;
+
+
+            for i = 1:N_in_pre
+                D0 = dist_metric([elevation_I(i),azimuth_I(i)],[elevation_E,azimuth_E]);
+                [~,I] = sort(D0,'ascend');
+                k = poissrnd(obj.iFiringRate/obj.eFiringRate);
+                D1 = exprnd(0.02,k,1);
+                D0(1) = Inf;
+                idcs0 = 1:length(D0);
+                for j = 1:k
+                    % Choose excitatory neuron nearby
+                    [~,jj] = min(abs(D0(idcs0)-D1(j)));
+                    idcs = speLUT{idcs0(jj)};
+                    idcs0(jj) = [];
+
+                    nTrans = length(idcs);
+                    idsI(count+1:count+nTrans) = i+N_ex_syn;,
+
+                    % Make some spikes random depending on branchNo
+                    idcs2 = rand(nTrans,1)<obj.branchNo;
+                    t0 = tsE(idcs).*idcs2+tmax*rand(nTrans,1).*(1-idcs2);
+
+                    % Add spikes to inhibitory neuron
+                    tsI(count+1:count+nTrans) = t0+dt*rand(nTrans,1);
+                    count = count+nTrans;
+                end
+            end
+            tsI(count:end) = [];
+            idsI(count:end) = [];
+
+            % Look up table for inhibitory spike times
+            spiLUT = cell(N_in_pre,1);
+            for j = 1:N_in_pre
+                spiLUT{j} = find(idsI==(j+N_ex_syn));
+            end
+
+            % Define parent synapses of which multisyanpses are copies
+            % If parent is -1, it is the original synapse.
+            parents = -ones(N,1);
+
+            % Final excitatory synapses
+            M = randi(N_ex_pre,N_ex_syn-N_ex_pre,1);
+            for j = 1:length(M)
+                % Get random presyanptic neuron
+                idcs = speLUT{M(j)};
+
+                % Truncated normal distribution centered on "parent" synapse
+                e = truncate(makedist('Normal','mu',elevation_E(M(j)),'sigma',0.02),0,1);
+                a = truncate(makedist('Normal','mu',azimuth_E(M(j)),'sigma',0.02),0,1);
+
+                elevation_E(j+N_ex_pre) = e.random; % Set synapse location nearby
+                azimuth_E(j+N_ex_pre) = a.random; % Set synapse location nearby
+                parents(j+N_ex_pre) = M(j);
+
+                tsE = [tsE;tsE(idcs)]; % Copy spike times
+                idsE = [idsE;(j+N_ex_pre)*ones(length(idcs),1)]; % New synapse ID
+            end
+
+            % Final inhibitory synapses
+            M = randi(N_in_pre,N_in_syn-N_in_pre,1);
+            for j = 1:length(M)
+                % Get random presyanptic neuron
+                idcs = spiLUT{M(j)};
+
+                % Truncated normal distribution centered on "parent" synapse
+                e = truncate(makedist('Normal','mu',elevation_I(M(j)),'sigma',0.05),0,1);
+                a = truncate(makedist('Normal','mu',azimuth_I(M(j)),'sigma',0.05),0,1);
+
+                elevation_I(j+N_in_pre) = e.random; % Set synapse location nearby
+                azimuth_I(j+N_in_pre) = a.random; % Set synapse location nearby
+                parents(j+N_in_pre+N_ex_syn) = M(j)+N_ex_syn;
+
+                tsI = [tsI;tsI(idcs)]; % Copy spike times
+                idsI = [idsI;(j+N_in_pre+N_ex_syn)*ones(length(idcs),1)]; % New synapse ID
+            end
+
+            % Combine
+            elevation = [elevation_E;elevation_I];
+            azimuth = [azimuth_E;azimuth_I];
+            ids = [idsE;idsI];
+            ts = [tsE;tsI]*1e3;
+
+            csvwrite(fullfile(obj.preNetwork,'connections.csv'),C);
+            csvwrite(fullfile(obj.preNetwork,'locations.csv'),[elevation(:),azimuth(:)]);
+            csvwrite(fullfile(obj.preNetwork,'multisynapse_IDs.csv'),parents(:));
+            network_simulation_beluga.save_presynaptic_network(ids,ts,ei,N,obj.spikingFile)
+        end
     end
 
     methods (Static)
 
+        function [embedding,idPreSyn] = loadSynapseLocations(umapFile,N)
+
+            data = csvread(umapFile);
+            [x,y,z] = sph2cart(data(:,2),data(:,3),data(:,3)*0+1);
+            idPreSyn = data(:,1);
+            embedding = [x(:),y(:),z(:)];
+            M = size(embedding,1);
+
+            if(M<N)
+                % Place all the left over synapses, i.e. those that were not correlated, randomly on the sphere
+                K = N-M;
+                elevation = asin(2*rand(K,1)-1);
+                azimuth = 2*pi*rand(K,1);
+                [x,y,z] = sph2cart(azimuth,elevation,1);
+                uncorrelated = [x,y,z];
+                embedding = [embedding;uncorrelated];
+                idPreSyn0 = setdiff(1:N,idPreSyn);
+                idPreSyn = [idPreSyn;idPreSyn0(:)];
+            end
+        end
+
         function save_presynaptic_network(neuronIDs,spikeTime,ei,synapseCount,filename)
-        % Save spiketimes generated by simulatespikes as a csv file for later use
+            % Save spiketimes generated by simulatespikes as a csv file for later use
             fid = fopen(filename,'w');
             [uM,~,nTemp] = unique(neuronIDs(:));
             I = accumarray(nTemp,1:numel(nTemp),[],@(x){sort(x)});
@@ -600,6 +695,29 @@ classdef network_simulation_beluga
             fclose(fid);
         end
 
+         function [f,P] = expectedEEGspectrum(dipoles,sa,idcs)
+            for j = 1:size(dipoles,3)
+                temp = resample(dipoles(2:end,:,j),2e3,16e3);
+                if(j==1)
+                    dp = zeros(size(temp,1),3,size(dipoles,3));
+                end
+                dp(:,:,j) = temp;
+            end
+            q = gpuArray(dp);
+
+            for j = 1:length(idcs)
+                eeg = network_simulation_beluga.getEEG(q,sa,idcs(j));
+                temp = mypmtm(eeg,2e3,2);
+               if(j==1)
+                    P = zeros(size(temp));
+                end
+                P = P+temp;
+            end
+            close(h);
+            P = P/length(idcs)*pi/2;
+            f = 0.5:0.5:1e3;
+        end
+
         function W = getEEG(Q,sa,idx)
             % Lead field for Cz recording
             L0 = squeeze(sa.cortex75K.V_fem(49,idx,:))'; % czIDX = 49
@@ -610,22 +728,6 @@ classdef network_simulation_beluga
             q = (Q(:,1,:).*vx+Q(:,2,:).*vy+Q(:,3,:).*vz)*1e-12; % nAum -> mAm
 
             W = squeeze(sum(L0.*q,2)*1e6); % V -> uV
-        end
-
-        function plotspectrum(f,P,varargin)
-            idcs = find(and(f>0,f<150));
-            plotwitherror(f(idcs),P(idcs,:),'Q',varargin{:});
-            set(gca,'xscale','log');
-            set(gca,'yscale','log');
-            % i = get(gca,'YTick');
-            % yls = split(sprintf('10^{%d},',i),',');
-            % yticklabels(yls(1:end-1));
-            xlim([0.5,150]);
-            xticks([1,10,100]);
-            xticklabels([1,10,100]);
-            xlabel('Frequency (Hz)');
-            ylabel(['PSD (' char(956) 'V^2/Hz)'])
-            gcaformat;
         end
 
         function [sa,X] = getHeadModel()
@@ -655,10 +757,16 @@ classdef network_simulation_beluga
             V = data(:,5);
         end
 
-        function Xnew = perturbSynapsePositions(X,S)
+        function Xnew = perturbSynapsePositions(X,S,isCart)
 
-            [theta0,phi0] = cart2sph(X(:,1),X(:,2),X(:,3));
-            phi0 = phi0+pi/2;
+            if(nargin<3 || isCart)
+                isCart = true;
+                [theta0,phi0] = cart2sph(X(:,1),X(:,2),X(:,3));
+                phi0 = phi0+pi/2;
+            elseif(~isCart)
+                theta0 = X(:,1);
+                phi0 = X(:,2)+pi/2;
+            end
 
             % Set a random distance and random bearing (distance propotional to S)
             sz = size(phi0);
@@ -674,9 +782,14 @@ classdef network_simulation_beluga
             A(d>pi) = 2*pi-A(d>pi);
             theta2 = theta0+real(A);
 
-            [x,y,z] = sph2cart(theta2,phi2-pi/2,1);
-            Xnew = [x,y,z];
+            if(isCart)
+                [x,y,z] = sph2cart(theta2,phi2-pi/2,1);
+                Xnew = [x,y,z];
+            else
+                Xnew = [theta2,phi2-pi/2];
+            end
         end
+
         function d = haversine_distance2(y,x)
             d = hav(y(:,1)-x(:,1))+(1-hav(x(:,1)-y(:,1))-hav(y(:,1)+x(:,1))).*hav(y(:,2)-x(:,2));
         end

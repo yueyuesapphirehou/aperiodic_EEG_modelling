@@ -46,7 +46,8 @@ idcs = intersect(idcs,intersect(idcs1,idcs2));
 % Make data sparse for display purposes
 idcs = idcs(randperm(size(idcs,1),400));
 
-fig = figureNB(5,2.75);
+% fig = figureNB(5,2.75);
+fig = figureNB(5.5,3);
 ax(1) = axes('Position',[0.16,0.3,0.3,0.55]);
 ax(2) = axes('Position',[0.6,0.3,0.3,0.55]);
 for i = 1:2

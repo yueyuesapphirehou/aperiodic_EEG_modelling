@@ -6,8 +6,8 @@ preExample = 10.^nanmedian(rescaled.psd(:,rescaled.t<-1,ptIdx),2);
 postExample = 10.^nanmedian(rescaled.psd(:,rescaled.t>0,ptIdx),2);
 [oofPre,oofFun] = getFOOOF(freq(freq<50),preExample(freq<50),false);
 [oofPost,oofFun] = getFOOOF(freq(freq<50),postExample(freq<50),false);
-[synPre,synFun] = synDetrend(freq(freq<100),preExample(freq<100));
-[synPost,synFun] = synDetrend(freq(freq<100),postExample(freq<100));
+[synPre,synFun] = synDetrend(freq(freq<100),preExample(freq<100),3,'exp2');
+[synPost,synFun,full_model] = synDetrend(freq(freq<100),postExample(freq<100),3,'exp2');
 
 
 for i = 1:14
@@ -24,8 +24,10 @@ for i = 1:14
     for j = 1:size(rescaled.psd,2)
         oofFit(:,j) = oofFun(freq,rescaled.oofPars(:,j,i));
         synFit(:,j) = synFun(freq,rescaled.synPars(1:4,j,i));
+        fitted(:,j) = synFun(freq,rescaled.synPars(1:4,j,i));
     end
     rescaled.syn(:,:,i) = rescaled.psd(:,:,i)-synFit;
+    rescaled.fit(:,:,i) = rescaled.psd(:,:,i)-synFit;
     rescaled.oof(:,:,i) = rescaled.psd(:,:,i)-log10(oofFit);
     rescaled.pre(:,:,i) = rescaled.psd(:,:,i)-log10(pre(:,i));
 
@@ -56,11 +58,14 @@ for i = 1:14
     params(:,:,i) = pars;
 end
 ptBL = nan(size(pRescaled));
+fitted = [];
 for i = 1:14
     for j = 1:size(params,2)
         ptBL(:,j,i) = synFun(ff,params(:,j,i));
+        fitted(:,j,i) = full_model(ff,params(:,j,i));
     end
 end
+rescaled.fit = fitted;
 rescaled.syn = pRescaled-ptBL;
 rescaled.syn = rescaled.syn-nanmedian(rescaled.syn(:,tRescaled<-1,:),2);
 rescaled.alpha_syn = 10*squeeze(nanmean(rescaled.syn(alphaIdx,:,:)));

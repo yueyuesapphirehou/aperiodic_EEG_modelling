@@ -71,7 +71,16 @@ def biExp(fScaled, *params):
     tau1,tau2,ratio,mag = params[0]
     ys = np.zeros_like(fScaled)
     x2 = (tau1-tau2)**2 / ((1+tau1**2*fScaled)*(1+tau2**2*fScaled));
+    # x2 = 10**ratio * tau2*np.reciprocal(1+fScaled*tau2**2) * (1 + mag*tau1*np.reciprocal(1+fScaled*tau1**2))
     ys = ys + mag + np.log10(np.exp(ratio)+x2);
+    # ys = ys + np.log10(x2);
+    return ys
+
+def syn_net(fScaled, *params):
+    tau1,tau2,ratio,mag,mag2 = params[0]
+    ys = np.zeros_like(fScaled)
+    x2 = tau1*np.reciprocal(1+fScaled*tau1**2) * (1 + mag*tau2*np.reciprocal(1+fScaled*tau2**2))
+    ys = ys + ratio + np.log10(np.exp(mag2)+x2);
     return ys
 
 def gaussian_function(xs, *params):
@@ -88,6 +97,9 @@ def full_model_exp2(xs,*params):
 def full_model_lorenz(xs,*params):
     return biLorenz(scaleFrequency(xs),params[0][:4]) + gaussian_function(xs,params[0][4:])
 
+def full_model_synnet(xs,*params):
+    return syn_net(scaleFrequency(xs),params[0][:5]) + gaussian_function(xs,params[0][5:])
+
 def objective(params, model_func, data):
     xd, yd = data
     ym = model_func(xd,params)
@@ -98,6 +110,7 @@ def full_objective(params, model_func, data):
     xd, yd = data
     ym = model_func(xd,params)
     peaks = gaussian_function(xd,params[4:])
+    # peaks = gaussian_function(xd,params[5:])
     # r = np.mean(np.abs(yd - ym))+np.mean(peaks[xd<20])/4+params[0]
     r = np.mean(np.abs(yd - ym))
     return r
@@ -126,18 +139,30 @@ def fit_initial(x_data,y_data,*params):
 def main(f,p,nPeaks=3,fitType='exp2',sp_ap=list()):
     # Aperiodic parameter bounds
     if(fitType=='exp2'):
-        lb_ap = [7e-3,0,-20,3]
+        # lb_ap = [7e-3,0,-20,3]
+        lb_ap = [7e-3,0,-20,1]
         ub_ap = [100e-3,10e-3,10,5]
+        # ub_ap = [100e-3,30e-3,10,5]
         scale_ap = [5e-3,1e-3]
         full_model = full_model_exp2
         model_func = biExp
         ratio0 = -11.5
-    else:
+        K=4
+    elif(fitType=='exp2'):
         lb_ap = [4e-3,1e-3,-3,-3]
-        ub_ap = [100e-3,3e-3,1,5]
+        # ub_ap = [100e-3,3e-3,1,5]
+        ub_ap = [100e-3,20e-3,1,5]
         full_model = full_model_lorenz
         model_func = biLorenz
         ratio0 = 0
+        K=4
+    elif(fitType=='syn_net'):
+        lb_ap = [1e-3,12e-3,-3,0,-20]
+        ub_ap = [100e-3,100e-3,10,200,10]
+        full_model = full_model_synnet
+        model_func = syn_net
+        ratio0 = 0
+        K=5
 
     if(len(sp_ap)==0):
         sp_ap = [17e-3,1e-3,ratio0,4]
@@ -175,10 +200,10 @@ def main(f,p,nPeaks=3,fitType='exp2',sp_ap=list()):
         #         pars0[j] = lb[j]<0
         results1 = sp.optimize.least_squares(full_objective,startpoint,bounds=(lb,ub),args = [full_model,[x_data, y_data]])
         if(nPeaks>0):
-            yDentrended = y_data-model_func(scaleFrequency(x_data),results1.x[:4])
-            results2 = sp.optimize.least_squares(objective,results1.x[4:],bounds=(lb_p,ub_p),args = [gaussian_function,[x_data, yDentrended]])
+            yDentrended = y_data-model_func(scaleFrequency(x_data),results1.x[:K])
+            results2 = sp.optimize.least_squares(objective,results1.x[K:],bounds=(lb_p,ub_p),args = [gaussian_function,[x_data, yDentrended]])
 
-            pars0 = np.concatenate((results1.x[:4],results2.x),0)
+            pars0 = np.concatenate((results1.x[:K],results2.x),0)
             results = sp.optimize.least_squares(full_objective,pars0,bounds=(lb,ub),args = [full_model,[x_data, y_data]])
             parsSave = results.x
         else:

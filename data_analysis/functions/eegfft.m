@@ -28,10 +28,10 @@ function [freq,time,psd] = eegfft(t,eeg,windowSize,overlap);
 	thet = K;
 	for i = 1:length(rachTs);
 		temp = eeg(rachTs(i)+iwindow);
-		if(any(isnan(temp)))
-			K(:,i) = nan;
-			continue;
-		end
+		% if(any(isnan(temp)))
+		% 	K(:,i) = nan;
+		% 	continue;
+		% end
 		[K(:,i),f] = pmtm(temp,2,[],Fs); % 3 tapers
 		% K(:,i) = 2*temp(2:L/2+1);
 	end

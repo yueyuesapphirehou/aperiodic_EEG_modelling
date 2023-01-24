@@ -1,86 +1,118 @@
-[sa,X] = network_simulation.getHeadModel;
-% masterPath = 'E:\Research_Projects\004_Propofol\Modelling\neuron_simulations\data\simulations\compare_network_dynamics\m=0.250';
-masterPath = 'E:\Research_Projects\004_Propofol\Modelling\neuron_simulations\data\simulations\compare_network_dynamics\m=0.980';
-F = dir(masterPath); F = F(3:end);
+load('E:\Research_Projects\004_Propofol\data\simulations\analyzed\dipole_correlations.mat')
+clrs = clrsPT.sequential(10); clrs = clrs(5:end,:);
 
-for i = 1:length(F)
-    temp = load(fullfile(masterPath,F(i).name,'data.mat'));
-    network(i) = temp.network.importResults;
-end
-
-C0 = zeros(10*9/2,11);
-K = 10;
-idcs = randi(size(X.vertices,1),K);
-h = waitbar(0);
-for i = 1:K
-    waitbar(i/K);
-    for j = 1:11
-        eeg = network_simulation.getEEG(network(j).results.dipoles,sa,idcs(i));
-        eeg = eeg(network(j).results.t<1e3,:);
-        temp = triu(corr(eeg),1);
-        C0(:,j) = C0(:,j) + temp(temp~=0);
+figureNB(10.6,3.4)
+axes('Position',[0.09,0.26,0.2,0.67]);
+    line([1,100],[0,0],'color',[0.6,0.6,0.6],'LineWidth',1);
+    hold on;
+    for i = 1:length(m)
+        x = 1/(1-m(i));
+        y = nanmean(C0(i,:));
+        y_lo = icdf('normal',0.05,0,1)*stderror(C0(i,:)');
+        y_hi = icdf('normal',0.95,0,1)*stderror(C0(i,:)');
+        plot(x,y,'.','color',[0.6,0.6,0.6],'MarkerSize',10,'LineWidth',1)
+        line([x,x],[y+y_lo,y+y_hi],'color',[0.6,0.6,0.6],'linewidth',1);
     end
-end
-C0 = C0/K;
-delete(h)
-
-figureNB(3.6,3.6);
-axes('position',[0.36,0.17,0.55,0.75]);
-    errorbar(11:-1:1,mean(C0),stderror(C0),'k','LineWidth',1);
+    plot(1./(1-m),nanmean(C1,2),'color','k','LineWidth',1);
+    for i = 1:length(m)
+        x = 1/(1-m(i));
+        y = nanmean(C1(i,:));
+        y_lo = icdf('normal',0.05,0,1)*stderror(C1(i,:)');
+        y_hi = icdf('normal',0.95,0,1)*stderror(C1(i,:)');
+        plot(x,y,'.','color',clrs(i,:),'MarkerSize',10,'LineWidth',1)
+        line([x,x],[y+y_lo,y+y_hi],'color',clrs(i,:),'linewidth',1);
+    end
+    set(gca,'xscale','log')
+    xlim([1,100]);
+    ylim([-0.05,0.6])
+    xl = xlabel('Spike prop. index. (1-m)^{-1}');
+    xl.Position(2) = -0.18;
+    ylabel('Dipole correlation');
     gcaformat
-    ylim([-0.1,0.5])
-    yticks([0,0.25,0.5])
-    ylabel('Dipole correlation')
-    set(gca,'XAxisLocation','origin')
-    xlim([0,12]);
-    xticks([1,6,11]);
-    xticklabels([0,0.5,1]);
-    xlabel('Syn. config. optimality','Position',[13,-0.2]);
+    text(1.5,0.4,{'Optimized','synapses'},'FontSize',6,'VerticalAlignment','top')
+    text(100,0.16,{'Random','synapses'},'FontSize',6,'VerticalAlignment','top','HorizontalAlignment','right','color',[0.6,0.6,0.6])
 
-figureNB(3,3);
-axes('position',[0.36,0.17,0.55,0.75]);
-    plot(randn(45,11)*0.2+[11:-1:1],C0,'.k','MarkerSize',3);
-    gcaformat
-    ylim([-0.1,0.5])
-    yticks([0,0.25,0.5])
-    ylabel('Dipole correlation')
-    set(gca,'XAxisLocation','origin')
-    xlim([0,12]);
-    xticks([1,6,11]);
-    xticklabels([0,0.5,1]);
-    xlabel('Syn. coord. index','Position',[13,-0.2]);
+mResults = load('E:\Research_Projects\004_Propofol\data\simulations\analyzed\analzye_simulations_crit.mat');
+f = mResults.f;
+axes('Position',[0.43,0.26,0.2,0.67]);
+    m = sort([0.99,0.98,0.95,0.86,0.63,0]);
+    h=[];
+    for i = 1:length(m)
+        y = mResults.P1(:,:,i);
+        h(i) = plotwitherror(f,y,'CI','color',clrs(i,:),'LineWidth',1);
+    end
+    ylabel(['PSD (' char(956) 'V^2/Hz)']);
+    xlabel('Frequency (Hz)')
+    xlim([0.5,100]);
+    ylim(10.^[-17,-13])
+    yticks(10.^[-16,-14]);
+    xticks([1,10,100]);
+    xticklabels([1,10,100]);
+    set(gca,'xscale','log')
+    set(gca,'yscale','log')
+    % L = legend(h,num2str(m(:)));
+    % L.Title.String = 'm value';
+    % L.Box = 'off';
+    % L.ItemTokenSize = [5,5];
+    % L.Position = [0.59,0.32,0.1,0.63];
+    gcaformat;
+
+axes('Position',[0.46,0.73,0.15,0.12]);
+    for i = 1:3
+        line([0,0.15],[0.8,0.8]-(i-1)*0.2,'LineWidth',1,'color',clrs(i,:))
+        if(i>1)
+            text(0.175,0.8-(i-1)*0.2,num2str(m(i)),'FontSize',6,'HorizontalAlignment','left','VerticalAlignment','middle','color',clrs(i,:));
+        else
+            text(0.175,0.8-(i-1)*0.2,'m=0','FontSize',6,'HorizontalAlignment','left','VerticalAlignment','middle','color',clrs(i,:));
+        end
+    end
+    for i = 1:3
+        line([0.55,0.7],[0.8,0.8]-(i-1)*0.2,'LineWidth',1,'color',clrs(i+3,:))
+        text(0.725,0.8-(i-1)*0.2,num2str(m(i+3)),'FontSize',6,'HorizontalAlignment','left','VerticalAlignment','middle','color',clrs(i+3,:));
+    end
+    axis off
+    % title('m value','FontSize',7,'Position',[0.5,0.9],'FontWeight','normal');
 
 
-C1 = zeros(10,10,10);
-for j = 1:10
-    eeg = network(j).results.Vmem;
-    C1(:,:,j) = corr(eeg);
-end
+mixResults = load('E:\Research_Projects\004_Propofol\data\simulations\analyzed\analyze_simulations_mixed.mat');
+f = mixResults.f;
+axes('Position',[0.77,0.26,0.2,0.67]);
+    m = sort([0.99,0.98,0.95,0.86,0.63,0]);
+    h=[];
+    plotwitherror(f,mixResults.P1(:,:,1),'CI','color',clrs(5,:),'LineWidth',1);
+    plotwitherror(f,mixResults.P1(:,:,2),'CI','color',clrsPT.qualitative_CM.blue,'LineWidth',1);
+    ylabel(['PSD (' char(956) 'V^2/Hz)']);
+    xlabel('Frequency (Hz)')
+    xlim([0.5,100]);
+    ylim(10.^[-17,-13])
+    yticks(10.^[-16,-14]);
+    xticks([1,10,100]);
+    xticklabels([1,10,100]);
+    set(gca,'xscale','log')
+    set(gca,'yscale','log')
+    gcaformat;
+    text(0.6,6e-14,'m = 0.98','FontSize',7)
+    text(0.67,2.3e-16,'\tau = 10 ms','FontSize',6,'color',clrs(5,:))
+    text(5.4,5e-15,'\tau = 30 ms','FontSize',6,'color',clrsPT.qualitative_CM.blue)
 
-clrs = clrsPT.iridescent(15);
-clrs = clrs(3:end,:);
-C = {};
-for i = 1:10
-    temp = C0(:,:,i);
-    C{i} = temp(temp~=1);
-end
+return;
 
-CV = {};
-for i = 1:10
-    temp = C1(:,:,i);
-    CV{i} = temp(temp~=1);
-end
+idcs = find(and(f0>0.5,f0<100));
 
-t = flip(linspace(0,1,10));
 figureNB;
-    m = cellfun(@(x)mean(x),CV);
-    s = cellfun(@(x)std(x),CV);
-    errorbar(t,m,s,'LineWidth',1);
-    gcaformat
-    ylim([-0.2,0.6])
-    line([0,1],[0,0],'color','k')
-    line([0,1],[0.1,0.1],'color','r')
-    xlabel('Synapse coordination')
-    ylabel('Pairwise dipole correlation')
-    xlim([0,1]);
-    xticks([0,0.5,1]);
+for i = 1:6
+    subplot(2,3,i);
+    P = mean(mResults.P1(:,:,i),2);
+    P = P./P(1);
+    [params,synFun,full_model] = synDetrend(f(idcs),P(idcs),0,'lorenz',[0.1,0.003,0,-1.2]);
+
+    plot(f,P)
+    set(gca,'xscale','log')
+    set(gca,'yscale','log')
+    hold on;
+    plot(f,10.^synFun(f,params));
+    xlim([0.5,100]);
+    tau(i) = params(1);
+    title(int2str(1e3*tau(i)))
+    drawnow;
+end
