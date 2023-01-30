@@ -4,9 +4,6 @@ import LFPy
 
 def morph2Segs(cellID):
     data = np.loadtxt(cellID)
-    # temp = np.array(data[:,3])
-    # data[:,3] = data[:,4]
-    # data[:,4] = temp
     arbours = list()
     somaPoints = np.argwhere(data[:,1]==1)
     for i in somaPoints:

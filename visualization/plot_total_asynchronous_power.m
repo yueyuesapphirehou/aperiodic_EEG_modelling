@@ -20,7 +20,7 @@ rho_bar = sum(corr_kernel(dMids').*nrnCount)/sum(nrnCount')
 
 load('E:\Research_Projects\004_Propofol\data\experiments\scalp_EEG\model_fits\pre.mat');
 
-load('E:\Research_Projects\004_Propofol\data\simulations\analyzed\network_criticality_spectra_(s=1).mat')
+load('E:\Research_Projects\004_Propofol\data\simulations\analyzed\_archive\network_criticality_spectra_(s=1).mat')
 
 asynchUnitarySpec = mean(mean(P(:,:,:),3),2);
 SIG0 = mean(sum(asynchUnitarySpec*mean(diff(f))));
