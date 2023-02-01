@@ -14,6 +14,7 @@ P_tau_osc = P(:,:,8);
 P_tau = P(:,:,9);
 P_crit_osc = P(:,:,10);
 
+
 figureNB(11.5,8);
 ax = axes('Position',[0.08,0.65,0.19,0.3]);
 labelpanel(ax.Position(1)-0.05,ax.Position(2)+ax.Position(4)-0.01,'b',true);

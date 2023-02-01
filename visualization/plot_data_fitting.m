@@ -65,6 +65,8 @@ for i = 1:14
         fitted(:,j,i) = full_model(ff,params(:,j,i));
     end
 end
+rescaled.time = linspace(-1.5,0.5,200);
+rescaled.freq = ff;
 rescaled.fit = fitted;
 rescaled.syn = pRescaled-ptBL;
 rescaled.syn = rescaled.syn-nanmedian(rescaled.syn(:,tRescaled<-1,:),2);

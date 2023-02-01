@@ -37,7 +37,7 @@ for idx = 1:14
     P(:,t0:t1,idx) = y;
 end
 
-tRescaled = linspace(-1.5,0.5,50);
+tRescaled = linspace(-1.5,0.5,200);
 pRescaled = zeros(size(P,1),length(tRescaled),14);
 for i = 1:14
     tr = -time/infusionTime(i);
