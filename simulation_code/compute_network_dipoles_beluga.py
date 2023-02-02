@@ -40,9 +40,9 @@ def addsyns(nrnID,meta_data,preEI,preSpikes,propofol):
         tau_change = int(remainder/10)
         weight_change = remainder-tau_change*10
     else:
-        tau = 23
-        tau_change = 1+2*propofol
-        weight_change = 1+0*propofol
+        tau = 10
+        tau_change = 1
+        weight_change = 1
 
     EX_PARAMS = {'idx': 0,
                     'e': 0,
@@ -56,9 +56,7 @@ def addsyns(nrnID,meta_data,preEI,preSpikes,propofol):
                     'e':-80,
                     'syntype': 'Exp2Syn',
                     'tau1': 1,
-                    # 'tau2': 13*(1+propofol*2),
                     'tau2': tau*tau_change,
-                    # 'weight': 0.0014*(1+propofol*0), # uS
                     'weight': 0.0007*weight_change, # uS
                     'record_current': False}
 

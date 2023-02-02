@@ -197,14 +197,10 @@ def main(f,p,nPeaks=3,fitType='exp2',sp_ap=list(),sp_p=list()):
         K=4
 
     startpoint = sp_ap
-    # if(len(sp_ap)>4):
-    #     startpoint = sp_ap
-    # else:
-    #     if(len(sp_ap)==0):
-    #         sp_ap = [17e-3,1e-3,ratio0,4]
-    #     if(len(sp_p)==0):
-    #         sp_p = [0.5,2,1.5,8,0.3,1,22,0.1,4,4,0,1]
-    #     startpoint = sp_ap + sp_p[:3*nPeaks]
+    if(len(sp_ap)==0):
+        sp_ap = [17e-3,1e-3,ratio0,4]
+        sp_p = [0.5,2,1.5,8,0.3,1,22,0.1,4,4,0,1]
+        startpoint = sp_ap + sp_p[:3*nPeaks]
 
     # Bounds for full model
     lb = lb_ap + lb_p

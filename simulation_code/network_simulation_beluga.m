@@ -12,14 +12,16 @@ classdef network_simulation_beluga
     end
 
     properties (Constant)
-        resourceFolder = '/home/nbrake/data/resources';
-        % resourceFolder = 'E:/Research_Projects/004_Propofol/data/resources';
+        % resourceFolder = '/home/nbrake/data/resources';
+        resourceFolder = 'E:/Research_Projects/004_Propofol/data/resources';
         functionFolder = fileparts(mfilename('fullpath'));
         eiFraction = 0.85;
         eFiringRate = 0.5; % Hz
         iFiringRate = 2.5; % Hz
-        eMulti = 3.6; % Syanpses/connections
-        iMulti = 13.9; % Syanpses/connections
+        eMulti = 1;
+        iMulti = 1;
+        % eMulti = 3.6; % Syanpses/connections
+        % iMulti = 13.9; % Syanpses/connections
     end
 
     properties (Access = private)
@@ -27,13 +29,13 @@ classdef network_simulation_beluga
         mTypeSegmentationData = fullfile(network_simulation_beluga.resourceFolder,'cortical_column_Hagen','segment_areas.mat');
         simulateFunction = fullfile(network_simulation_beluga.functionFolder,'compute_network_dipoles_beluga.py');
         convertFilesFunction = fullfile(network_simulation_beluga.functionFolder,'np2mat.py');
-        correlationFunction = fullfile(network_simulation_beluga.functionFolder,'compute_correlation_matrix_parallel.exe');
+        correlationFunction = fullfile(network_simulation_beluga.functionFolder,'compute_tiling_correlation.exe');
         embeddingFunction = fullfile(network_simulation_beluga.functionFolder,'embed_data.py');
         neuronTypes = {'L23E_oi24rpy1';'L23I_oi38lbc1';'L23I_oi38lbc1';'L4E_53rpy1';'L4E_j7_L4stellate';'L4E_j7_L4stellate';'L4I_oi26rbc1';'L4I_oi26rbc1';'L5E_oi15rpy4';'L5E_j4a';'L5I_oi15rbc1';'L5I_oi15rbc1';'L6E_51_2a_CNG';'L6E_oi15rpy4';'L6I_oi15rbc1';'L6I_oi15rbc1'};
         nrnAbundance = [26.8,3.2,4.3,9.5,9.5,9.5,5.6,1.5,4.9,1.3,0.6,0.8,14,4.6,1.9,1.9]/100
         dendriteLengths = [9319,4750,4750,7169,4320,4320,2359,2359,14247,5720,5134,5134,5666,6183,5134,5134];
         activeConductances = false
-        propofol = 0
+        inSynParamChanges = 0
         synapseCount
         morphoCounts
         correlationFile
@@ -90,13 +92,12 @@ classdef network_simulation_beluga
             end
         end
 
-        function obj = addPropofol(obj,x)
-            if(nargin<2)
-                obj.propofol = 1;
-            else
-                obj.propofol = x;
-            end
-            % obj.eFiringRate = obj.eFiringRate*0.5;
+        function obj = changeInhibitorySynapseParams(obj,x)
+            % Changes physiology of GABA receptors based on
+            % input vector x. x must be of the form
+            %    x = [tau_decay,tau_scale_factor,amplitude_scale_factor]
+            % (Scaling factors must be less than 10).
+            obj.inSynParamChanges = x(:)'*[100;10;1];
         end
 
         function file = getCorrelationFile(network)
@@ -105,6 +106,13 @@ classdef network_simulation_beluga
 
         function N = getsynapsecount(obj)
             N = obj.synapseCount;
+        end
+
+        function [time,V,dipoles] = importSimulationResults(network)
+            load(fullfile(network.savePath,'simulation_data.mat'));
+            time = time(2:end);
+            V = V(2:end,:);
+            dipoles = dipoles(2:end,:,:);
         end
 
         function obj = initialize_postsynaptic_network(obj,neuronCount,randMorphos)
@@ -142,7 +150,11 @@ classdef network_simulation_beluga
             fid3 = fopen(filename3,'w');
             for i = 1:length(mTypes)
                 for k = 1:obj.morphoCounts(i)
-                    fprintf(fid3,'%s\n',fullfile(obj.morphologyPath,[mTypes{i} '.swc']));
+                    mPath = fullfile(obj.morphologyPath,[mTypes{i} '.swc']);
+                    if(strcmp(filesep,'\'))
+                        mPath = strrep(mPath,'\','/');
+                    end
+                    fprintf(fid3,'%s\n',mPath);
                     simID = ['cell' sprintf('%05d',counter)];
                     obj.neurons(counter).name = simID;
                     obj.neurons(counter).mType = mTypes{i};
@@ -249,9 +261,10 @@ classdef network_simulation_beluga
             synapseList = zeros(obj.synapseCount,1);
             remainingSyns = true(length(parentSynapses),1);
             multiSynapses = cell(length(obj.neurons),1);
+            totalSynapseCount = 0;
             count = 1;
             N = length(parentSynapses);
-            while( (count< N) && (length(cat(1,multiSynapses{:})) < obj.synapseCount))
+            while( (count <= N) && (totalSynapseCount <= obj.synapseCount) )
                 % Choose random dendrite segment based on surface area
                 postNeuron = postNeuronList(count);
                 segment = interp1(dendriteAreaCDF{postNeuron},1:length(dendriteAreaCDF{postNeuron}),rand,'next','extrap');
@@ -276,6 +289,15 @@ classdef network_simulation_beluga
 
                 % Find all other terminals from presynaptic neuron
                 multiSynapses{postNeuron} = [multiSynapses{postNeuron};find(multID(:)==parentSynapseID)];
+                totalSynapseCount = length(cat(1,multiSynapses{:}))+count;
+            end
+
+            if(totalSynapseCount<obj.synapseCount)
+                disp('Warning: fewer presyanptic synapses than expected. Reducing syanpse count. Presyanptic network size too small?');
+                postNeuronList = postNeuronList(1:count-1);
+                segmentList = segmentList(1:count-1);
+                synapseList = synapseList(1:count-1);
+                obj.synapseCount = totalSynapseCount;
             end
 
             % For each postsynaptic neuron, draw segments and add multisynapses
@@ -321,23 +343,30 @@ classdef network_simulation_beluga
                 mkdir(obj.savePath)
             end
 
-            params = strjoin({obj.postNetwork,obj.spikingFile,obj.savePath,int2str(obj.tmax+100),char(string(obj.activeConductances)),num2str(obj.propofol)});
+            if(strcmp(filesep,'\'))
+                savePath = strrep(obj.savePath,'\','/');
+                functionFolder = strrep(obj.functionFolder,'\','/');
+                postNetwork = strrep(obj.postNetwork,'\','/');
+            end
+
+            params = strjoin({postNetwork,obj.spikingFile,savePath,int2str(obj.tmax+100),char(string(obj.activeConductances)),num2str(obj.inSynParamChanges)});
 
             % Convert connections to JSON files
-            pySimulate(obj.postNetwork,fullfile(network_simulation_beluga.functionFolder,'prep_simulations.py'));
+            pySimulate(postNetwork,fullfile(functionFolder,'prep_simulations.py'));
 
             % Simulate dipoles with LFPy (main simulation)
-            pySimulate(params,fullfile(network_simulation_beluga.functionFolder,'compute_network_dipoles_beluga.py'));
+            pySimulate(params,fullfile(functionFolder,'compute_network_dipoles_beluga.py'));
 
             % Convert NPY files to mat files
-            pySimulate(obj.savePath,fullfile(network_simulation_beluga.functionFolder,'npy2mat.py'));
+            pySimulate(obj.savePath,fullfile(functionFolder,'npy2mat.py'));
+
+            obj.save();
         end
 
         function obj = compute_presynaptic_correlations(obj,spikingFile)
             % Get pairwise correlation matrix among all presynaptic
             % neurons based on spike trains (sparse)
             obj.correlationFile = fullfile(obj.preNetwork,'correlations.csv');
-            % corrFile = fullfile(obj.preNetwork,'correlations2.csv');
             if(exist(obj.correlationFile))
                 disp('Correlation file already exists.');
                 return;
@@ -349,6 +378,12 @@ classdef network_simulation_beluga
             if(err~=0)
                 error(sprintf('%d: %s',err,prints));
             end
+        end
+
+        function obj = embed_presyanptic_neurons(obj)
+            file1 = obj.getCorrelationFile;
+            file2 = fullfile(obj.preNetwork,'UMAP_embedding.csv');
+            system(['python ' obj.embeddingFunction ' ' file1 ' ' file2]);
         end
 
         function save(obj,filename)
@@ -456,7 +491,6 @@ classdef network_simulation_beluga
 
         function [ids,ts,ei] = simulatespikes_critplane(obj,N,tmax)
 
-            % N = 30000; % Size of presyanptic network
             tmax = tmax*1e-3;
 
             % Number of E and I synapses
@@ -554,7 +588,6 @@ classdef network_simulation_beluga
             tsI = -ones(ceil(10*N_in_pre*tmax),1);
             count = 0;
 
-
             for i = 1:N_in_pre
                 D0 = dist_metric([elevation_I(i),azimuth_I(i)],[elevation_E,azimuth_E]);
                 [~,I] = sort(D0,'ascend');
@@ -640,6 +673,7 @@ classdef network_simulation_beluga
             csvwrite(fullfile(obj.preNetwork,'multisynapse_IDs.csv'),parents(:));
             network_simulation_beluga.save_presynaptic_network(ids,ts,ei,N,obj.spikingFile)
         end
+
     end
 
     methods (Static)
@@ -648,7 +682,7 @@ classdef network_simulation_beluga
 
             data = csvread(umapFile);
             [x,y,z] = sph2cart(data(:,2),data(:,3),data(:,3)*0+1);
-            idPreSyn = data(:,1);
+            idPreSyn = data(:,1)+1;
             embedding = [x(:),y(:),z(:)];
             M = size(embedding,1);
 
@@ -747,14 +781,6 @@ classdef network_simulation_beluga
             T = textscan(fid,'%s');
             ei = cellfun(@(x)x(1),T{1})=='i';
             fclose(fid);
-        end
-
-
-        function [t,V,Q] = importSimulationFile(filename)
-            data = csvread(filename,1,0);
-            t = data(:,1);
-            Q = data(:,2:4);
-            V = data(:,5);
         end
 
         function Xnew = perturbSynapsePositions(X,S,isCart)

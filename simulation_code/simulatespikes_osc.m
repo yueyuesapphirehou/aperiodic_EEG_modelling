@@ -1,9 +1,11 @@
-function [ids,ts,ei] = simulatespikes_osc(N,tmax,network)
+function [ids,ts,ei] = simulatespikes_osc(N,tmax,network,oscillation_freq)
+    if(nargin<4)
+        oscillation_freq = 2; % Hz
+    end
     M1 = floor(N/2);
     M2 = N-M1;
-    [ids1,ts1,ei1,elevation1,azimuth1,parents1] = simulatespikes(M1,tmax,0,network.branchNo);
-    [ids2,ts2,ei2,elevation2,azimuth2,parents2] = simulatespikes(M2,tmax,1,network.branchNo);
-
+    [ids1,ts1,ei1,elevation1,azimuth1,parents1] = simulatespikes(M1,tmax,0,network.branchNo,oscillation_freq);
+    [ids2,ts2,ei2,elevation2,azimuth2,parents2] = simulatespikes(M2,tmax,1,network.branchNo,oscillation_freq);
     ids = [ids1;ids2+M1];
     ts = [ts1;ts2];
     ei = [ei1(:);ei2(:)];
@@ -14,9 +16,8 @@ function [ids,ts,ei] = simulatespikes_osc(N,tmax,network)
     csvwrite(fullfile(network.preNetwork,'locations.csv'),[azimuth(:),elevation(:)]);
     csvwrite(fullfile(network.preNetwork,'multisynapse_IDs.csv'),parents(:));
     network_simulation_beluga.save_presynaptic_network(ids,ts,ei,N,network.spikingFile)
-
 end
-function [ids,ts,ei,elevation,azimuth,parents] = simulatespikes(N,tmax,offset,branchNo)
+function [ids,ts,ei,elevation,azimuth,parents] = simulatespikes(N,tmax,offset,branchNo,f0)
 
     tmax = tmax*1e-3;
     eFiringRate = 0.5;
@@ -74,8 +75,8 @@ function [ids,ts,ei,elevation,azimuth,parents] = simulatespikes(N,tmax,offset,br
     tsE(1:nTrans) = t(1)*ones(nTrans,1);
     count = nTrans;
 
-    % osc = 1+0.7*sin(2*pi*t*10+pi*offset);
-    osc = 1+0.7*sin(2*pi*t*2+pi*offset);
+    % osc = 1+0.7*sin(2*pi*t*f0+pi*offset);
+    osc = 1+sin(2*pi*t*f0+pi*offset);
 
     for i = 2:tN-1
         % Get spiking cells at previous time point

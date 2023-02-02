@@ -1,0 +1,2 @@
+E:/Research_Projects/004_Propofol/data/resources/cortical_column_Hagen/swc/L23E_oi24rpy1.swc
+E:/Research_Projects/004_Propofol/data/resources/cortical_column_Hagen/swc/L4E_j7_L4stellate.swc

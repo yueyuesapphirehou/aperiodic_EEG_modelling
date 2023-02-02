@@ -67,7 +67,7 @@ int *readSpikeTrains(char *filename,int nWidth,int nHeight)
         }
         i++;
     }
-    fprintf(errorFile,"%d,%d\n",sizeof(int) * nWidth*nHeight,nWidth*i+j);
+    // fprintf(errorFile,"%d,%d\n",sizeof(int) * nWidth*nHeight,nWidth*i+j);
     fclose(stream);
     fclose(errorFile);
 
