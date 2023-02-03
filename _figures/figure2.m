@@ -120,6 +120,8 @@ ax = axes('Position',[0.48,0.575,0.24,0.04]);
 
 
 load('C:\Users\brake\Documents\temp\cortical_area.mat')
+signed_area = A;
+total_area = B;
 N = 16e9;
 dMids = 0.5*(rValues(2:end)+rValues(1:end-1));
 nrnCount = mean(diff(signed_area),2)*200000;
