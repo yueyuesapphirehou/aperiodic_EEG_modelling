@@ -1,5 +1,5 @@
 
-mResults = load('E:\Research_Projects\004_Propofol\data\simulations\analyzed\analzye_simulations_crit.mat');
+mResults = load('simulation_avalanches_spectra.mat');
 f = mResults.f;
 clrs = clrsPT.sequential(10); clrs = clrs(5:end,:);
 
@@ -9,7 +9,7 @@ tau0 = [11,13,15,22,100,100];
 fig = figureNB(18.3,12);
 for i = 1:6
     subplot(2,3,i);
-    P = mean(mResults.P1(:,:,i),2);
+    P = mean(mResults.spectra(:,:,i),2);
     offset = P(1);
     P = P./offset;
     if(i>3)
@@ -20,7 +20,7 @@ for i = 1:6
         [params,synFun,full_model] = synDetrend(f(idcs),P(idcs),0,'lorenz',[tau0(i)*1e-3,0.003,0.02,-1]);
     end
 
-    h = plotwitherror(f,mResults.P1(:,:,i),'Q','color',clrs(i,:),'LineWidth',1)
+    h = plotwitherror(f,mResults.spectra(:,:,i),'Q','color',clrs(i,:),'LineWidth',1)
     set(gca,'xscale','log')
     set(gca,'yscale','log')
     hold on;

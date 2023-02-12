@@ -13,7 +13,8 @@ classdef network_simulation_beluga
 
     properties (Constant)
         % resourceFolder = '/home/nbrake/data/resources';
-        resourceFolder = 'E:/Research_Projects/004_Propofol/data/resources';
+        % resourceFolder = 'E:/Research_Projects/004_Propofol/data/resources';
+        resourceFolder = 'E:\Research_Projects\004_Propofol\manuscript\Version3\Data';
         functionFolder = fileparts(mfilename('fullpath'));
         eiFraction = 0.85;
         eFiringRate = 0.5; % Hz
@@ -26,7 +27,7 @@ classdef network_simulation_beluga
 
     properties (Access = private)
         morphologyPath = fullfile(network_simulation_beluga.resourceFolder,'cortical_column_Hagen','swc');
-        mTypeSegmentationData = fullfile(network_simulation_beluga.resourceFolder,'cortical_column_Hagen','segment_areas.mat');
+        mTypeSegmentationData = fullfile(network_simulation_beluga.resourceFolder,'cortical_column_Hagen','morphology_segmentations.mat');
         simulateFunction = fullfile(network_simulation_beluga.functionFolder,'compute_network_dipoles_beluga.py');
         convertFilesFunction = fullfile(network_simulation_beluga.functionFolder,'np2mat.py');
         correlationFunction = fullfile(network_simulation_beluga.functionFolder,'compute_tiling_correlation.exe');
@@ -197,7 +198,7 @@ classdef network_simulation_beluga
             network_simulation_beluga.save_presynaptic_network(neuronIDs,spikeTime,ei,obj.synapseCount,obj.spikingFile);
         end
 
-        function form_connections(obj,coordination_index)
+        function obj = form_connections(obj,coordination_index)
         % Places synapses such that correlated synapses are placed in dendrite segments with similar directions relative to the soma
 
             if(nargin<2)
@@ -215,7 +216,7 @@ classdef network_simulation_beluga
             parentSynapses = find(multID==-1);
 
             % Load neuron segment locations projected onto sphere
-            load(fullfile(network_simulation_beluga.resourceFolder,'cortical_column_Hagen','segment_areas.mat'))
+            load(obj.mTypeSegmentationData);
 
             % Embed dendrites of each postsyanptic neuron onto sphere
             dendriteEmbedding = cell(length(obj.neurons),1);
@@ -765,7 +766,7 @@ classdef network_simulation_beluga
         end
 
         function [sa,X] = getHeadModel()
-            load(fullfile(network_simulation_beluga.resourceFolder,'head_models','sa_nyhead.mat'));
+            load(fullfile(network_simulation_beluga.resourceFolder,'anatomy_nyhead_model.mat'));
             X = struct();
             X.vertices = sa.cortex75K.vc;
             X.faces= sa.cortex75K.tri;

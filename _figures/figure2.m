@@ -26,7 +26,6 @@ for i = 1:size(X.faces);
 end
 F = X.faces(find(idcs),:);
 
-
 sigma = 4;
 pairs = nchoosek(1:3,2);
 V0 = V;
@@ -88,7 +87,6 @@ ax = axes('Position',[0.11,0.515,0.4,0.5]);
     x4 = x3(:) + R*(e1*cos(-pi/2)+e2*sin(-pi/2));
     x = [x1,x2,x3,x4];
     P = patch(x(1,:),x(2,:),x(3,:),'b','LineWidth',1,'FaceColor','none');
-
 ax = axes('Position',[0.455,0.64,0.3,0.3]);
     plot_mesh_brain(X3);
     d = vecnorm(X3.vertices,2,2);
@@ -118,8 +116,8 @@ ax = axes('Position',[0.48,0.575,0.24,0.04]);
     axis off;
 
 
-
-load('C:\Users\brake\Documents\temp\cortical_area.mat')
+% Compute expected EEG variance of 16 billion passive neurons
+load('anatomy_cortical_pairwise_distance_distribution.mat')
 signed_area = A;
 total_area = B;
 N = 16e9;
@@ -130,12 +128,21 @@ corr_kernel = @(d) exp(-d.^2/10);
 rho_bar = sum(corr_kernel(dMids).*nrnCount)/sum(nrnCount');
 SIG_N = @(rho) N+N*(N-1)*rho;
 
-load('E:\Research_Projects\004_Propofol\data\experiments\scalp_EEG\model_fits\pre.mat');
-load('E:\Research_Projects\004_Propofol\data\simulations\analyzed\_archive\network_criticality_spectra_(s=1).mat')
+% Get baseline EEG spectrum from propofol cohort
+load('data_time_information.mat')
+t0 = timeInfo.infusion_onset-timeInfo.object_drop;
+load('data_Cz_multitaper_meanRef.mat')
+for i = 1:14
+    pre(:,i) = nanmedian(psd(:,and(time>=t0(i)-10,time<t0(i)),i),2);
+end
+
+% Get simulated passive spectrum
+load('simulation_passive_spectra.mat')
 asynchUnitarySpec = mean(mean(P(:,:,:),3),2);
-SIG0 = mean(sum(asynchUnitarySpec*mean(diff(f))));
+SIG0 = sum(asynchUnitarySpec*mean(diff(f)));
 P0 = interp1(f,asynchUnitarySpec,freq);
 
+% Plot
 red = [0.8000    0.2980    0.0078];
 ax = axes('Position',[0.18 0.15 0.23 0.23*8.5/6]);
     plotwitherror(freq,pre,'M','color',[0.6,0.6,0.6],'LineWidth',1);

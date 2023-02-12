@@ -5,11 +5,11 @@ addpath(fullfile(fileparts(fileparts(wd)),'simulation_code'));
 network = network_simulation_beluga(wd);
 
 % Initialize post network
-nPostNeurons = 1;
-network = network.initialize_postsynaptic_network(nPostNeurons,[1,1]);
+nPostNeurons = 2;
+network = network.initialize_postsynaptic_network(nPostNeurons,[1,2]);
 
 % Presyanptic network parameters
-nPreNeurons = 30000;
+nPreNeurons = 30e3;
 network.tmax = 2e3; % 2 seconds
 network.branchNo = 0.98;
 network.simulatespikes_critplane(nPreNeurons,network.tmax);
@@ -19,11 +19,11 @@ copyfile(fullfile(network.preNetwork,'spikeTimes.csv'),fullfile(network.preNetwo
 x = csvread(fullfile(network.preNetwork,'locations.csv'));
 x1 = 2*pi*x(:,1);
 y1 = asin(2*x(:,2)-1);
-data = [(1:nPreNeurons)',x1(:),y1(:)];
+data = [(1:nPreNeurons)'-1,x1(:),y1(:)];
 dlmwrite(fullfile(network.preNetwork,'UMAP_embedding.csv'),data,'precision','%.4f');
 
 % Place syanpse optimally (input between 0 and 1, with 1 optimal and 0 random)
-network.form_connections(1);
+network = network.form_connections(1);
 
 % Simulate dipoles
 network = network.simulate();

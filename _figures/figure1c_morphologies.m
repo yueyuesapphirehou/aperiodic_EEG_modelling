@@ -1,6 +1,5 @@
-folder = 'E:\Research_Projects\004_Propofol\data\resources\cortical_column_Hagen\segmentations';
-F = dir(folder); F = F(3:end);
-
+load(fullfile('cortical_column_Hagen','morphology_segmentations.mat'));
+mTypes = fieldnames(nrnSegs);
 
 layers = [0,-300,-300,-750,-1000,-1335];
 x0(1,:) = [1150,layers(2)-20];
@@ -30,8 +29,8 @@ for i = 1:length(LY)
 end
 
 for k = 1:size(x0,1)
-    morphData = load(fullfile(folder,F(k).name));
-    if(isempty(strfind(F(k).name,'I_')))
+    morphData = nrnSegs.(mTypes{k});
+    if(isempty(strfind(mTypes{k},'I_')))
         clr = clrsPT.qualitative_CM.red;
     else
         clr = clrsPT.qualitative_CM.blue;

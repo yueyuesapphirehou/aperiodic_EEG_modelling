@@ -1,13 +1,11 @@
 addpath('C:\Users\brake\Documents\MATLAB\fmriView')
 [sa,X] = network_simulation_beluga.getHeadModel;
 idcs = sa.cortex2K.in_from_cortex75K;
-load('E:\Research_Projects\004_Propofol\data\simulations\raw\passive\PSD_rep.mat');
 czIdx = find(strcmp(sa.clab_electrodes,'Cz'));
 
-iExample = [32918,37229];
-
-x1 = [X.vertices(iExample(1),:),sa.cortex75K.normals(iExample(1),:)];
-x2 = [X.vertices(iExample(2),:),sa.cortex75K.normals(iExample(2),:)];
+load('E:\Research_Projects\004_Propofol\manuscript\Version3\Data\simulation_passive_example_spectra.mat');
+x1 = [X.vertices(location_indices(1),:),sa.cortex75K.normals(location_indices(1),:)];
+x2 = [X.vertices(location_indices(2),:),sa.cortex75K.normals(location_indices(2),:)];
 
 blue = [0,1,1]/2;
 red = [1,0,1]/1.5;
@@ -19,8 +17,8 @@ axes('Position',[0.0,-0.2,0.46,1.54]);
     view([122,15]);
     plot3(sa.locs_3D(czIdx,1),sa.locs_3D(czIdx,2),sa.locs_3D(czIdx,3),'.k','MarkerSize',10);
     plot3(X.vertices(idcs,1),X.vertices(idcs,2),X.vertices(idcs,3),'.k','MarkerSize',2);
-    plot3(X.vertices(iExample(1),1),X.vertices(iExample(1),2),X.vertices(iExample(1),3),'.','color',blue,'MarkerSize',15);
-    plot3(X.vertices(iExample(2),1),X.vertices(iExample(2),2),X.vertices(iExample(2),3),'.','color',red,'MarkerSize',15);
+    plot3(X.vertices(location_indices(1),1),X.vertices(location_indices(1),2),X.vertices(location_indices(1),3),'.','color',blue,'MarkerSize',15);
+    plot3(X.vertices(location_indices(2),1),X.vertices(location_indices(2),2),X.vertices(location_indices(2),3),'.','color',red,'MarkerSize',15);
     colormap(flip(gray(10)))
     fix_lighting;
 
@@ -43,9 +41,9 @@ axes('Position',[0.0,-0.2,0.46,1.54]);
     text(pos(1),pos(2),pos(3),'Neuron placement','fontsize',7,'HorizontalAlignment','center','VerticalAlignment','top')
 
 axes('Position',[0.68,0.3,0.28,0.57]);
-    plot(f,P(:,iExample(1)),'color',blue,'LineWidth',0.5); hold on;
-    plot(f,P(:,iExample(2)),'color',red,'LineWidth',0.5); hold on;
-    plot(f,mean(P,2),'k','LineWidth',1)
+    plot(f,spectrum_location_1,'color',blue,'LineWidth',0.5); hold on;
+    plot(f,spectrum_location_2,'color',red,'LineWidth',0.5); hold on;
+    plot(f,spectrum_average,'k','LineWidth',1)
     set(gca,'xscale','log');
     set(gca,'yscale','log');
     xlim([0.5,150]);

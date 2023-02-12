@@ -1,16 +1,13 @@
-folder = 'E:\Research_Projects\004_Propofol\data\simulations\raw\test\correlations';
-
-load('E:\Research_Projects\004_Propofol\data\resources\cortical_column_Hagen\segment_areas.mat');
+load(fullfile('cortical_column_Hagen','morphology_segmentations.mat'));
 nrnID = [1,2];
 fn = fieldnames(nrnSegs);
 mData = nrnSegs.(fn{nrnID(1)});
 mData2 = nrnSegs.(fn{nrnID(2)});
 
 N = 400;
-network = network_simulation_beluga(folder);
+network = network_simulation_beluga(pwd);
 network = network.initialize_postsynaptic_network(2,nrnID);
 network = network.setsynapsecount(N);
-
 
 [dist_list,~,k] = getToyModel(N);
 dist_list(:,end) = 1-dist_list(:,end);

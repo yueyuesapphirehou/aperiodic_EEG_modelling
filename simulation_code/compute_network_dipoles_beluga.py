@@ -33,7 +33,8 @@ def load_spike_times(spikingFile):
     return preEI,preSpikes
 
 def addsyns(nrnID,meta_data,preEI,preSpikes,propofol):
-    SYANPSE_FAILURE_RATE = 0.7
+    # SYANPSE_FAILURE_RATE = 0.7
+    SYANPSE_FAILURE_RATE = 0
     if(propofol>100):
         tau = int(propofol/100)
         remainder = propofol-tau*100
