@@ -1,7 +1,7 @@
 ## Overview
 In this repository is the code associated with the following paper: 
 
-Brake N, Duc F, Rokos A, Arseneau F, Shiva Shahiri S, Khadra A and Plourde G (2023). "A Unified Theory of Aperiodic EEG Predicts 1 Signatures of Propofol Anesthesia." ***Submitted***
+Brake N, Duc F, Rokos A, Arseneau F, Shiva Shahiri S, Khadra A and Plourde G (2023). "A Unified Theory of Aperiodic EEG Predicts Signatures of Propofol Anesthesia." ***Submitted***
 
 The repo contains functions to reproduce all the figures in the paper. Use function set_matlab_path to set the path. Functions take the argument ***dataFolder***, which is the path to analyzed EEG data and simulations. This data can be downloaded here:  
     https://drive.google.com/uc?export=download&id=173OsShSYm1u3OX_Q96gsWXYATuHBbL0s
