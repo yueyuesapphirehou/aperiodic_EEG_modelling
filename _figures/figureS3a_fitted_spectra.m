@@ -1,5 +1,6 @@
+function figureS3a(dataFolder)
 
-mResults = load('simulation_avalanches_spectra.mat');
+mResults = load(fullfile(dataFolder,'simulation_avalanches_spectra.mat'));
 f = mResults.f;
 clrs = clrsPT.sequential(10); clrs = clrs(5:end,:);
 
@@ -20,7 +21,7 @@ for i = 1:6
         [params,synFun,full_model] = synDetrend(f(idcs),P(idcs),0,'lorenz',[tau0(i)*1e-3,0.003,0.02,-1]);
     end
 
-    h = plotwitherror(f,mResults.spectra(:,:,i),'Q','color',clrs(i,:),'LineWidth',1)
+    h = plotwitherror(f,mResults.spectra(:,:,i),'Q','color',clrs(i,:),'LineWidth',1);
     set(gca,'xscale','log')
     set(gca,'yscale','log')
     hold on;
@@ -39,7 +40,7 @@ for i = 1:6
     L = legend(h,['m = ' num2str(m(i))]);
     L.Box = 'off';
     L.ItemTokenSize = [10,10];
-    L.FontSize = 7
+    L.FontSize = 7;
     
     gcaformat;
     drawnow;

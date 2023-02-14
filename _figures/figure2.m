@@ -1,4 +1,5 @@
-addpath('C:\Users\brake\Documents\MATLAB\fmriView')
+function figure2(dataFolder)
+
 % Get surface area of each triangle
 [sa,X] = network_simulation_beluga.getHeadModel;
 x0 = [54,24,35];
@@ -115,9 +116,8 @@ ax = axes('Position',[0.48,0.575,0.24,0.04]);
     line([-15,-5],[0,0],'color','k','LineWidth',2);
     axis off;
 
-
 % Compute expected EEG variance of 16 billion passive neurons
-load('anatomy_cortical_pairwise_distance_distribution.mat')
+load(fullfile(dataFolder,'anatomy_cortical_pairwise_distance_distribution.mat'));
 signed_area = A;
 total_area = B;
 N = 16e9;
@@ -129,15 +129,15 @@ rho_bar = sum(corr_kernel(dMids).*nrnCount)/sum(nrnCount');
 SIG_N = @(rho) N+N*(N-1)*rho;
 
 % Get baseline EEG spectrum from propofol cohort
-load('data_time_information.mat')
+load(fullfile(dataFolder,'data_time_information.mat'));
 t0 = timeInfo.infusion_onset-timeInfo.object_drop;
-load('data_Cz_multitaper_meanRef.mat')
+load(fullfile(dataFolder,'data_Cz_multitaper_meanRef.mat'));
 for i = 1:14
     pre(:,i) = nanmedian(psd(:,and(time>=t0(i)-10,time<t0(i)),i),2);
 end
 
 % Get simulated passive spectrum
-load('simulation_passive_spectra.mat')
+load(fullfile(dataFolder,'simulation_passive_spectra.mat'));
 asynchUnitarySpec = mean(mean(P(:,:,:),3),2);
 SIG0 = sum(asynchUnitarySpec*mean(diff(f)));
 P0 = interp1(f,asynchUnitarySpec,freq);
@@ -198,70 +198,3 @@ ax = axes('Position',[0.55 0.15 0.23 0.23*8.5/6]);
 labelpanel(0.07,0.92,'a',true);
 labelpanel(0.07,0.48,'b',true);
 labelpanel(0.44,0.48,'c',true);
-
-figureNB(10,5);
-subplot(1,2,1);
-    dscale = [0,10.^linspace(-2,0,991),1.01:0.01:10];
-    t = 1;
-    tt = zeros(length(dscale),length(t));
-    for i = 1:length(dscale)
-        corr_kernel2 = @(d) exp(-d.^2/dscale(i));
-        rho_bar = sum(corr_kernel2(dMids).*nrnCount)/sum(nrnCount');
-        tt(i) = SIG0*SIG_N(t*rho_bar);
-    end
-    plot(dscale,tt,'LineWidth',1);
-    hold on;
-    line([1e-1,10],[50,50],'color','r','LineWidth',1);
-    line([1e-1,10],[200,200],'color','r','LineWidth',1);
-    set(gca,'xscale','log');
-    set(gca,'yscale','log');
-    xlim([1e-1,10]);
-    ylim([1,1e4])
-    xlabel('\sigma^2 (mm)')
-    ylabel('Total EEG power (uV^2)')
-    sigma_max = interp1(tt',dscale,200);
-    disp(['Since \rho_{max}<1, then \sigma^2 must be greater than ' num2str(sigma_max,2) ' mm.']);
-    title(['\rho_{max} = 1']);
-    gcaformat;
-subplot(1,2,2);
-    t = [0,10.^linspace(-3,-1,481),0.1001:0.001:1];
-    t = t(:);
-    corr_kernel2 = @(d) exp(-d.^2/4);
-    rho_bar = sum(corr_kernel2(dMids).*nrnCount)/sum(nrnCount');
-    tt = SIG0*SIG_N(t*rho_bar);
-    plot(t,tt,'LineWidth',1);
-    hold on;
-    line([1e-2,1],[50,50],'color','r','LineWidth',1);
-    line([1e-2,1],[200,200],'color','r','LineWidth',1);
-    set(gca,'xscale','log');
-    set(gca,'yscale','log');
-    xlim([1e-2,1]);
-    ylim([1,1e4])
-    xlabel('\rho_{max}')
-    ylabel('Total EEG power (uV^2)')
-    rho_max = interp1(tt,t,200);
-    title(['\sigma^2 = 4 mm']);
-    disp(['If \sigma^2 = 4 mm, then \rho_{max} should be about ' num2str(rho_max,2) '.']);
-    gcaformat;
-
-figureNB(10,5);
-subplot(1,2,1);
-    plot(rValues,mean(signed_area,2),'.-','MarkerSize',10,'LineWidth',1);
-    hold on;
-    plot(rValues,mean(total_area,2),'.-','MarkerSize',10,'LineWidth',1);
-    set(gca,'xscale','log')
-    set(gca,'yscale','log')
-    xlabel('Distance (mm)')
-    ylabel('Cumulative area (mm^2)')
-    gcaformat
-subplot(1,2,2);
-    dMids = 0.5*(rValues(2:end)+rValues(1:end-1));
-    plot(dMids,mean(diff(signed_area),2),'.-','MarkerSize',10,'LineWidth',1);
-    hold on;
-    plot(dMids,mean(diff(total_area),2),'.-','MarkerSize',10,'LineWidth',1);
-    set(gca,'xscale','log')
-    set(gca,'yscale','log')
-    xlabel('Distance (mm)')
-    ylabel('Area (mm^2)')
-    gcaformat
-

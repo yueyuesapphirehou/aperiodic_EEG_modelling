@@ -1,15 +1,19 @@
+function figure1defg(dataFolder)
+
+addpath(dataFolder);
+
 % function plot_unitary_spectrum_and_tau
 [sa,X] = network_simulation_beluga.getHeadModel;
 
+load(fullfile(dataFolder,'anatomy_nyhead_model.mat'));
+load(fullfile(dataFolder,'simulation_passive_different_tau_decay.mat','GABAR_tau','spectra_fitted_tau'));
+load(fullfile(dataFolder,'simulation_passive_spectra.mat'))
+load(fullfile(dataFolder,'simulation_passive_EEG_variance.mat'));
 
-load('simulation_passive_different_tau_decay.mat','GABAR_tau','spectra_fitted_tau');
-load('simulation_passive_spectra.mat')
-load('simulation_passive_EEG_variance.mat');
 
-
-load('data_time_information.mat')
+load(fullfile(dataFolder,'data_time_information.mat'))
 t0 = timeInfo.infusion_onset-timeInfo.object_drop;
-data = load('data_Cz_multitaper_meanRef.mat');
+data = load(fullfile(dataFolder,'data_Cz_multitaper_meanRef.mat'));
 pre = [];
 for i = 1:length(t0)
     pre(:,i) = nanmedian(data.psd(:,data.time<t0(i),i),2);
@@ -48,7 +52,7 @@ axes('Position',[0.44,0.61,0.16,0.32]);
     xlabel('GABA_AR \tau_{decay} (ms)')
     gcaformat;
 axes('Position',[0.17,0.21,0.43,0.21]);
-    histogram(log10(mean(V)),'LineStyle','none','BinWidth',0.02,'FaceColor','k')
+    histogram(log10(V),'LineStyle','none','BinWidth',0.02,'FaceColor','k')
     xlim([-14.5,-13])
     ylabel('count')
     xlabel('Avg. power (uV^2)')

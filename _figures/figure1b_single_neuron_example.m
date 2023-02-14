@@ -1,9 +1,10 @@
-addpath('C:\Users\brake\Documents\MATLAB\fmriView')
+function figure1b(dataFolder)
+
 [sa,X] = network_simulation_beluga.getHeadModel;
 idcs = sa.cortex2K.in_from_cortex75K;
 czIdx = find(strcmp(sa.clab_electrodes,'Cz'));
 
-load('E:\Research_Projects\004_Propofol\manuscript\Version3\Data\simulation_passive_example_spectra.mat');
+load(fullfile(dataFolder,'simulation_passive_example_spectra.mat'));
 x1 = [X.vertices(location_indices(1),:),sa.cortex75K.normals(location_indices(1),:)];
 x2 = [X.vertices(location_indices(2),:),sa.cortex75K.normals(location_indices(2),:)];
 

@@ -1,38 +1,29 @@
-load('E:\Research_Projects\004_Propofol\data\experiments\scalp_EEG\model_fits\pre.mat');
-load('E:\Research_Projects\004_Propofol\data\experiments\scalp_EEG\model_fits\fits.mat');
+function figure6(dataFolder)
+
+aligned = load(fullfile(dataFolder,'data_aligned_detrended.mat'));
+rescaled = load(fullfile(dataFolder,'data_rescaled_detrended.mat'));
+freq = rescaled.freq;
 
 ptIdx = 1;
-preExample = 10.^nanmedian(rescaled.psd(:,rescaled.t<-1,ptIdx),2);
-postExample = 10.^nanmedian(rescaled.psd(:,rescaled.t>0,ptIdx),2);
+preExample = 10.^nanmedian(rescaled.psd(:,rescaled.time<-1,ptIdx),2);
+postExample = 10.^nanmedian(rescaled.psd(:,rescaled.time>0,ptIdx),2);
 [oofPre,oofFun] = getFOOOF(freq(freq<50),preExample(freq<50),false);
 [oofPost,oofFun] = getFOOOF(freq(freq<50),postExample(freq<50),false);
 [synPre,synFun] = synDetrend(freq(freq<100),preExample(freq<100),3,'exp2');
 [synPost,synFun,full_model] = synDetrend(freq(freq<100),postExample(freq<100),3,'exp2');
 
-
 for i = 1:14
     oofFit = []; synFit = [];
-    for j = 1:size(aligned.psd,2)
-        oofFit(:,j) = oofFun(freq,aligned.oofPars(:,j,i));
-        synFit(:,j) = synFun(freq,aligned.synPars(1:4,j,i));
-    end
-    aligned.syn(:,:,i) = aligned.psd(:,:,i)-synFit;
-    aligned.oof(:,:,i) = aligned.psd(:,:,i)-log10(oofFit);
-    aligned.pre(:,:,i) = aligned.psd(:,:,i)-log10(pre(:,i));
-
-    oofFit = []; synFit = [];
     for j = 1:size(rescaled.psd,2)
-        oofFit(:,j) = oofFun(freq,rescaled.oofPars(:,j,i));
+        oofFit(:,j) = log10(oofFun(freq,rescaled.oofPars(:,j,i)));
         synFit(:,j) = synFun(freq,rescaled.synPars(1:4,j,i));
-        fitted(:,j) = synFun(freq,rescaled.synPars(1:4,j,i));
     end
-    rescaled.syn(:,:,i) = rescaled.psd(:,:,i)-synFit;
-    rescaled.fit(:,:,i) = rescaled.psd(:,:,i)-synFit;
-    rescaled.oof(:,:,i) = rescaled.psd(:,:,i)-log10(oofFit);
-    rescaled.pre(:,:,i) = rescaled.psd(:,:,i)-log10(pre(:,i));
+    rescaled.syn_detrended(:,:,i) = rescaled.psd(:,:,i)-synFit;
+    rescaled.oof_detrended(:,:,i) = rescaled.psd(:,:,i)-oofFit;
 
-    rescaled.oof(:,:,i) = rescaled.oof(:,:,i)-nanmedian(rescaled.oof(:,rescaled.t<-1,i),2);
-    rescaled.syn(:,:,i) = rescaled.syn(:,:,i)-nanmedian(rescaled.syn(:,rescaled.t<-1,i),2);
+    rescaled.pre(:,:,i) = rescaled.psd(:,:,i)-nanmedian(rescaled.psd(:,rescaled.time<-1,i),2);
+    rescaled.oof(:,:,i) = rescaled.oof_detrended(:,:,i)-nanmedian(rescaled.oof_detrended(:,rescaled.time<-1,i),2);
+    rescaled.syn(:,:,i) = rescaled.syn_detrended(:,:,i)-nanmedian(rescaled.syn_detrended(:,rescaled.time<-1,i),2);
 end
 
 
@@ -48,28 +39,6 @@ rescaled.alpha_oof = 10*squeeze(nanmean(rescaled.oof(alphaIdx,:,:)));
 rescaled.beta_oof = 10*squeeze(nanmean(rescaled.oof(betaIdx,:,:)));
 rescaled.delta_oof = 10*squeeze(nanmean(rescaled.oof(deltaIdx,:,:)));
 
-
-
-load('E:\Research_Projects\004_Propofol\data\experiments\scalp_EEG\model_fits\rescaled_Sep2022\rescaled_data.mat')
-folder = 'E:\Research_Projects\004_Propofol\data\experiments\scalp_EEG\model_fits\rescaled_manual\fitted';
-load('E:\Research_Projects\004_Propofol\data\experiments\scalp_EEG\model_fits\rescaled_Sep2022\rescaled_data.mat')
-for i = 1:14
-    load(fullfile(folder,['pt' int2str(i) '_rescaled_28-Sep-2022.mat']));
-    params(:,:,i) = pars;
-end
-ptBL = nan(size(pRescaled));
-fitted = [];
-for i = 1:14
-    for j = 1:size(params,2)
-        ptBL(:,j,i) = synFun(ff,params(:,j,i));
-        fitted(:,j,i) = full_model(ff,params(:,j,i));
-    end
-end
-rescaled.time = linspace(-1.5,0.5,200);
-rescaled.freq = ff;
-rescaled.fit = fitted;
-rescaled.syn = pRescaled-ptBL;
-rescaled.syn = rescaled.syn-nanmedian(rescaled.syn(:,tRescaled<-1,:),2);
 rescaled.alpha_syn = 10*squeeze(nanmean(rescaled.syn(alphaIdx,:,:)));
 rescaled.beta_syn = 10*squeeze(nanmean(rescaled.syn(betaIdx,:,:)));
 rescaled.delta_syn = 10*squeeze(nanmean(rescaled.syn(deltaIdx,:,:)));
@@ -105,7 +74,7 @@ axes('Position',[0.29,0.72,0.11,0.14]);
     ylim([-10,20]);
     ylabel('Power (dB)');
 axes('Position',[0.51,0.72,0.2,0.18]);
-    imagesc(aligned.t,freq,10*nanmedian(aligned.pre,3));
+    imagesc(aligned.time,freq,10*nanmedian(aligned.pre,3));
     ylim([0.5,50])
     colormap('jet')
     % colorbar;
@@ -117,9 +86,9 @@ axes('Position',[0.51,0.72,0.2,0.18]);
     xlabel('Time rel. LOC (min)')
     set(gca,'CLim',[-5,10])
 axes('Position',[0.79,0.72,0.2,0.18]);
-    h(1) = plotwitherror(rescaled.t,smoothdata(rescaled.alpha_pre,'movmedian',10),'SE','LineWidth',1,'color',clrs(1,:));
-    h(2) = plotwitherror(rescaled.t,smoothdata(rescaled.beta_pre,'movmedian',10),'SE','LineWidth',1,'color',clrs(2,:));
-    h(3) = plotwitherror(rescaled.t,smoothdata(rescaled.delta_pre,'movmedian',10),'SE','LineWidth',1,'color',clrs(3,:));
+    h(1) = plotwitherror(rescaled.time,smoothdata(rescaled.alpha_pre,'movmedian',3),'SE','LineWidth',1,'color',clrs(1,:));
+    h(2) = plotwitherror(rescaled.time,smoothdata(rescaled.beta_pre,'movmedian',3),'SE','LineWidth',1,'color',clrs(2,:));
+    h(3) = plotwitherror(rescaled.time,smoothdata(rescaled.delta_pre,'movmedian',3),'SE','LineWidth',1,'color',clrs(3,:));
     xlim([-1.25,0.25]);
     ylim([-2.5,15])
     ylabel('Power (dB)');
@@ -160,7 +129,7 @@ axes('Position',[0.29,0.4,0.11,0.14]);
     ylim([-10,20]);
     ylabel('Power (dB)');
 axes('Position',[0.51,0.4,0.2,0.18]);
-    imagesc(aligned.t,freq,10*nanmedian(aligned.oof,3));
+    imagesc(aligned.time,freq,10*nanmedian(aligned.oof,3));
     ylim([0.5,50])
     colormap('jet')
     % colorbar;
@@ -172,9 +141,9 @@ axes('Position',[0.51,0.4,0.2,0.18]);
     xlabel('Time rel. LOC (min)')
     set(gca,'CLim',[-5,10])
 axes('Position',[0.79,0.4,0.2,0.18]);
-    plotwitherror(rescaled.t,smoothdata(rescaled.alpha_oof,'movmedian',10),'SE','LineWidth',1,'color',clrs(1,:));
-    plotwitherror(rescaled.t,smoothdata(rescaled.beta_oof,'movmedian',10),'SE','LineWidth',1,'color',clrs(2,:));
-    plotwitherror(rescaled.t,smoothdata(rescaled.delta_oof,'movmedian',10),'SE','LineWidth',1,'color',clrs(3,:));
+    plotwitherror(rescaled.time,smoothdata(rescaled.alpha_oof,'movmedian',3),'SE','LineWidth',1,'color',clrs(1,:));
+    plotwitherror(rescaled.time,smoothdata(rescaled.beta_oof,'movmedian',3),'SE','LineWidth',1,'color',clrs(2,:));
+    plotwitherror(rescaled.time,smoothdata(rescaled.delta_oof,'movmedian',3),'SE','LineWidth',1,'color',clrs(3,:));
      xlim([-1.25,0.25]);
      ylim([-2.5,6])
      ylabel('Power (dB)');
@@ -212,7 +181,7 @@ axes('Position',[0.29,0.08,0.11,0.14]);
     ylim([-10,20]);
     ylabel('Power (dB)');
 axes('Position',[0.51,0.08,0.2,0.18]);
-    imagesc(aligned.t,freq,10*nanmedian(aligned.syn,3));
+    imagesc(aligned.time,freq,10*nanmedian(aligned.syn,3));
     ylim([0.5,50])
     colormap('jet')
     % colorbar;
@@ -224,9 +193,9 @@ axes('Position',[0.51,0.08,0.2,0.18]);
     xlabel('Time rel. LOC (min)')
     set(gca,'CLim',[-5,10])
 axes('Position',[0.79,0.08,0.2,0.18]);
-    plotwitherror(tRescaled,smoothdata(rescaled.alpha_syn,'movmedian',3),'SE','LineWidth',1,'color',clrs(1,:));
-    plotwitherror(tRescaled,smoothdata(rescaled.beta_syn,'movmedian',3),'SE','LineWidth',1,'color',clrs(2,:));
-    plotwitherror(tRescaled,smoothdata(rescaled.delta_syn,'movmedian',3),'SE','LineWidth',1,'color',clrs(3,:));
+    plotwitherror(rescaled.time,smoothdata(rescaled.alpha_syn,'movmedian',3),'SE','LineWidth',1,'color',clrs(1,:));
+    plotwitherror(rescaled.time,smoothdata(rescaled.beta_syn,'movmedian',3),'SE','LineWidth',1,'color',clrs(2,:));
+    plotwitherror(rescaled.time,smoothdata(rescaled.delta_syn,'movmedian',3),'SE','LineWidth',1,'color',clrs(3,:));
     xlim([-1.25,0.25]);
     ylabel('Power (dB)');
     xlabel('Rescaled time')
@@ -272,3 +241,48 @@ A.String = 'Lorentzian detrended';
 A.FontSize = 7;
 A.FontWeight = 'normal';
 A.Position(3) = 0.3;
+
+
+
+figureNB;
+subplot(1,3,1);
+    imagesc(rescaled.time,rescaled.freq,10*nanmedian(rescaled.pre,3))
+    ylim([0.5,50])
+    axis xy
+    ylabel('Frequency (Hz)')
+    xlim([-1.25,0.25]);
+    ylabel('Power (dB)');
+    xlabel('Rescaled time')
+    xticks([-1,0]);
+    xticklabels({'Infusion','LOC'})
+    line([-1,-1],[0,50],'color','w');
+    line([0,0],[0,50],'color','w');
+    set(gca,'CLim',[-3,10])
+subplot(1,3,2);
+    imagesc(rescaled.time,rescaled.freq,10*nanmedian(rescaled.oof_detrended,3))
+    ylim([0.5,50])
+    axis xy
+    ylabel('Frequency (Hz)')
+    xlim([-1.25,0.25]);
+    ylabel('Power (dB)');
+    xlabel('Rescaled time')
+    xticks([-1,0]);
+    xticklabels({'Infusion','LOC'})
+    line([-1,-1],[0,50],'color','w');
+    line([0,0],[0,50],'color','w');
+    set(gca,'CLim',[-3,10])
+subplot(1,3,3);
+    imagesc(rescaled.time,rescaled.freq,10*nanmedian(rescaled.syn_detrended,3))
+    ylim([0.5,50])
+    axis xy
+    ylabel('Frequency (Hz)')
+    xlim([-1.25,0.25]);
+    ylabel('Power (dB)');
+    xlabel('Rescaled time')
+    xticks([-1,0]);
+    xticklabels({'Infusion','LOC'})
+    line([-1,-1],[0,50],'color','w');
+    line([0,0],[0,50],'color','w');
+    set(gca,'CLim',[-3,10])
+colormap(flip(CM(idcs,:)));
+gcaformat(gcf)

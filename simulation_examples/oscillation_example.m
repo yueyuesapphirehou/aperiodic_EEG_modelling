@@ -1,8 +1,5 @@
-wd = mfilename('fullpath');
-addpath(fullfile(fileparts(fileparts(wd)),'simulation_code'));
-
 % Initialize network
-network = network_simulation_beluga(wd);
+network = network_simulation_beluga(fullfile(pwd,'oscillation_example'));
 
 % Initialize post network
 nPostNeurons = 1;

@@ -1,6 +1,8 @@
+function figureS2(dataFolder)
+
 warning('off','MATLAB:handle_graphics:exceptions:SceneNode')
 
-load('simulations_synapse_dipole_orientation.mat');
+load(fullfile(dataFolder,'simulations_synapse_dipole_orientation.mat'));
 mType = unique(mTypes);
 mTypes = findgroups(mTypes);
 

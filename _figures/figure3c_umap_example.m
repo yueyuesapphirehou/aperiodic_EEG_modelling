@@ -1,4 +1,6 @@
-load(fullfile('cortical_column_Hagen','morphology_segmentations.mat'));
+function figure3c(dataFolder)
+
+load(fullfile(dataFolder,'cortical_column_Hagen','morphology_segmentations.mat'));
 nrnID = [1,2];
 fn = fieldnames(nrnSegs);
 mData = nrnSegs.(fn{nrnID(1)});
@@ -106,6 +108,7 @@ txt = label(0,0.075,'Pairwise correlation');
 txt = label(0.31,0.075,'UMAP embedding');
 txt = label(0.68,0.075,'Projection onto dendrites');
 
+end
 function [dist_list,seriated_dist,k] = getToyModel(N)
     M = 2;
     T = 500;

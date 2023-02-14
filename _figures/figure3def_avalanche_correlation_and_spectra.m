@@ -1,4 +1,6 @@
-load('simulation_avalanches_dipole_correlations.mat');
+function figure3def(dataFolder)
+
+load(fullfile(dataFolder,'simulation_avalanches_dipole_correlations.mat'));
 clrs = clrsPT.sequential(10); clrs = clrs(5:end,:);
 
 figureNB(10.6,3.4)
@@ -32,7 +34,7 @@ axes('Position',[0.09,0.26,0.2,0.67]);
     text(1.5,0.4,{'Optimized','synapses'},'FontSize',6,'VerticalAlignment','top')
     text(100,0.16,{'Random','synapses'},'FontSize',6,'VerticalAlignment','top','HorizontalAlignment','right','color',[0.6,0.6,0.6])
 
-mResults = load('simulation_avalanches_spectra.mat');
+mResults = load(fullfile(dataFolder,'simulation_avalanches_spectra.mat'));
 axes('Position',[0.43,0.26,0.2,0.67]);
     m = sort([0.99,0.98,0.95,0.86,0.63,0]);
     h=[];
@@ -73,7 +75,7 @@ axes('Position',[0.46,0.73,0.15,0.12]);
     % title('m value','FontSize',7,'Position',[0.5,0.9],'FontWeight','normal');
 
 
-crit_tau = load('simulations_avalanches_tau_spectra.mat');
+crit_tau = load(fullfile(dataFolder,'simulations_avalanches_tau_spectra.mat'));
 axes('Position',[0.77,0.26,0.2,0.67]);
     m = sort([0.99,0.98,0.95,0.86,0.63,0]);
     h=[];

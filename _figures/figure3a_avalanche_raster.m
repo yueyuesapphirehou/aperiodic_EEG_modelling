@@ -1,11 +1,14 @@
-wd = mfilename('fullpath');
-network = network_simulation_beluga(wd);
+function figure3a(dataFolder)
+
+network = network_simulation_beluga(pwd);
 network.branchNo = 0.98;
-N = 30000;
-[ids,ts,ei] = network.simulatespikes_critplane(N,5e3)
+% N = 30000;
+N = 1000;
+disp('Neuron count set to 1,000 for faster computation. Figure in paper uses n=30000');
+[ids,ts,ei] = network.simulatespikes_critplane(N,5e3);
 ts = ts+5e3;
 
-loc = csvread(fullfile(wd,'presynaptic_network','locations.csv'));
+loc = csvread(fullfile(pwd,'presynaptic_network','locations.csv'));
 
 d = vecnorm(loc-[0.55,0.1],2,2);
 [I1,I2] = sort(d,'ascend');

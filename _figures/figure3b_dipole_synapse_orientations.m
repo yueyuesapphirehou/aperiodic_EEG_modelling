@@ -1,4 +1,6 @@
-load('simulations_synapse_dipole_orientation.mat');
+function figure3b(dataFolder)
+
+load(fullfile(dataFolder,'simulations_synapse_dipole_orientation.mat'));
 
 dMag = squeeze(max(vecnorm(dipoles,2,2)));
 dMag./max(dMag)*3;

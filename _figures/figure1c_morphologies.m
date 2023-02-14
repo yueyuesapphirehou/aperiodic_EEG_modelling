@@ -1,4 +1,6 @@
-load(fullfile('cortical_column_Hagen','morphology_segmentations.mat'));
+function figure1c(dataFolder)
+
+load(fullfile(dataFolder,'cortical_column_Hagen','morphology_segmentations.mat'));
 mTypes = fieldnames(nrnSegs);
 
 layers = [0,-300,-300,-750,-1000,-1335];

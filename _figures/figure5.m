@@ -1,9 +1,11 @@
-eeg_example = load('C:\Users\brake\Documents\GitHub\Propofol2021-private\data\sampleTimeSeries1.mat');
+function figure5(dataFolder)
 
-load('E:\Research_Projects\004_Propofol\data\experiments\scalp_EEG\raw\timeInformation.mat')
+eeg_example = load(fullfile(dataFolder,'data_sample_time_series.mat'));
+
+load(fullfile(dataFolder,'data_time_information.mat'));
 t0 = timeInfo.infusion_onset-timeInfo.object_drop;
 
-load('E:\Research_Projects\004_Propofol\data\experiments\scalp_EEG\analyzed\Cz_multitaper_mean.mat')
+load(fullfile(dataFolder,'data_Cz_multitaper_meanRef.mat'));
 
 % Compute Baseline spectrum
 for i = 1:14
@@ -78,7 +80,7 @@ axes('Position',[0.71,0.465,0.25,0.26]);
     text(2.3,2.6,'Pre-LOC (0-10 s)','fontsize',7,'color',red);
 
 
-load('E:\Research_Projects\004_Propofol\data\experiments\scalp_EEG\model_fits\baseline_preLOC_fits.mat')
+load(fullfile(dataFolder,'data_baseline_preLOC_fitted_parameters.mat'));
 
 [full_model,synFun] = fittingmodel;
 for i = 1:14
@@ -123,18 +125,11 @@ axes('Position',[0.36,0.09,0.22,0.26]);
 
 
 
-
-
-folder = 'E:\Research_Projects\004_Propofol\data\experiments\scalp_EEG\model_fits\rescaled_manual\fitted';
-load('E:\Research_Projects\004_Propofol\data\experiments\scalp_EEG\model_fits\rescaled_Sep2022\rescaled_data.mat')
-for i = 1:14
-load(fullfile(folder,['pt' int2str(i) '_rescaled_28-Sep-2022.mat']));
-params(:,:,i) = pars;
-end
-tau = squeeze(params(1,:,:))*1e3;
+load(fullfile(dataFolder,'data_rescaled_detrended.mat'));
+tau = squeeze(synPars(1,:,:))*1e3;
 
 axes('Position',[0.71,0.09,0.25,0.26]);
-    plotwitherror(linspace(-1.5,0.5,200),squeeze(params(1,:,:))*1e3,'SE','color','k')
+    plotwitherror(time,tau,'SE','color','k')
     xticks([-1,0]);
     xticklabels({'Infusion','LOC'})
     xlabel('Rescaled time')

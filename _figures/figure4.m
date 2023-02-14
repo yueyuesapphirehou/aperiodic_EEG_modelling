@@ -1,10 +1,12 @@
+function figure4(dataFolder)
+
 red = clrsPT.qualitative_CM.red*0.85;
 blue = clrsPT.qualitative_CM.blue*0.85;
 grey = clrsPT.qualitative_CM.grey*0.75;
 black = [0,0,0];
 
 
-load('C:\Users\brake\Documents\temp\analzye_simulations_10.mat')
+load(fullfile(dataFolder,'simulation_oscillations_spectra_0.1Hz.mat'));
 % P1(:,:,7:10) = nan;
 P_tau_crit = P(:,:,2);
 P_crit = P(:,:,4);
@@ -92,7 +94,7 @@ labelpanel(ax.Position(1)-0.05,ax.Position(2)+ax.Position(4)-0.01,'e',true);
     text(0.6,0.85*1.5*10^-16,'m=0.98 (ap.)','color',red,'FontSize',6)
     title('Freq. res. = 0.1 Hz','FontWeight','normal','FontSize',7);
 
-load('C:\Users\brake\Documents\temp\analzye_simulations_2.mat');
+load(fullfile(dataFolder,'simulation_oscillations_spectra_0.5Hz.mat'));
 P1(:,:,7:10) = nan;
 P_baseline = 1.2*P1(:,:,5);
 P_tau = P1(:,:,2);

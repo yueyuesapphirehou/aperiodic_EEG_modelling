@@ -1,12 +1,9 @@
-wd = mfilename('fullpath');
-addpath(fullfile(fileparts(fileparts(wd)),'simulation_code'));
-
 % Initialize network
-network = network_simulation_beluga(wd);
+network = network_simulation_beluga(fullfile(pwd,'avalanche_example'));
 
 % Initialize post network
-nPostNeurons = 2;
-network = network.initialize_postsynaptic_network(nPostNeurons,[1,2]);
+nPostNeurons = 1;
+network = network.initialize_postsynaptic_network(nPostNeurons);
 
 % Presyanptic network parameters
 nPreNeurons = 30e3;

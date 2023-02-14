@@ -21,8 +21,8 @@ classdef network_simulation_beluga
         iFiringRate = 2.5; % Hz
         eMulti = 1;
         iMulti = 1;
-        % eMulti = 3.6; % Syanpses/connections
-        % iMulti = 13.9; % Syanpses/connections
+        % eMulti = 3.6; % Syanpses/connections Markram et al.
+        % iMulti = 13.9; % Syanpses/connections Markram et al.
     end
 
     properties (Access = private)

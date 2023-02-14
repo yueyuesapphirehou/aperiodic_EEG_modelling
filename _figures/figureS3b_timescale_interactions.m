@@ -1,5 +1,7 @@
-mResults = load('simulation_avalanches_spectra.mat');
-tauResults = load('simulations_avalanches_tau_spectra.mat');
+function figureS3b(dataFolder)
+
+mResults = load(fullfile(dataFolder,'simulation_avalanches_spectra.mat'));
+tauResults = load(fullfile(dataFolder,'simulations_avalanches_tau_spectra.mat'));
 
 
 delT = tauResults.spectra_m0_tau30./tauResults.spectra_m0_tau10;
