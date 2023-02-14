@@ -8,9 +8,9 @@ The repo contains functions to reproduce all the figures in the paper. Use funct
 
 
 The repo also contains functions to run EEG simulations. Things that need to be compiled for simulation  
-    From the base directory, compile the C program for computing tiling correlation (requires openmp for parallel computing)  
-        gcc -o ./simulation_code/compute_tiling_correlation.exe ./simulation_code/compute_tiling_correlation.c -fopenmp -lm  
-    Navigate to ./simulation_code/mod_files and compile the MOD files for neuron, i.e. using nrnivmodl.  
+&emsp;From the base directory, compile the C program for computing tiling correlation (requires openmp for parallel computing)  
+&emsp;&emsp;gcc -o ./simulation_code/compute_tiling_correlation.exe ./simulation_code/compute_tiling_correlation.c -fopenmp -lm  
+&emsp;Navigate to ./simulation_code/mod_files and compile the MOD files for neuron, i.e. using nrnivmodl.  
 
 Python dependencies  
     python/3.8.10  
