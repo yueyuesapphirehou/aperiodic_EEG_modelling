@@ -1,5 +1,9 @@
 function figure5(dataFolder)
 
+if(nargin<1)
+    error('Path to data required as input argument. Data can be downloaded from link in README file.');
+end
+
 eeg_example = load(fullfile(dataFolder,'data_sample_time_series.mat'));
 psd = [];
 

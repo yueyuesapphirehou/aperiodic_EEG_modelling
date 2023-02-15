@@ -1,5 +1,9 @@
 function figureS4(dataFolder)
 
+if(nargin<1)
+    error('Path to data required as input argument. Data can be downloaded from link in README file.');
+end
+
 [full_model,synFun,apFun] = fittingmodel('avalanches');
 clrs = clrsPT.lines(4);
 blue = clrsPT.qualitative_CM.blue;

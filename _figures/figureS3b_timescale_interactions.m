@@ -1,5 +1,9 @@
 function figureS3b(dataFolder)
 
+if(nargin<1)
+    error('Path to data required as input argument. Data can be downloaded from link in README file.');
+end
+
 mResults = load(fullfile(dataFolder,'simulation_avalanches_spectra.mat'));
 tauResults = load(fullfile(dataFolder,'simulations_avalanches_tau_spectra.mat'));
 

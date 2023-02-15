@@ -1,5 +1,9 @@
 function figureS2(dataFolder)
 
+if(nargin<1)
+    error('Path to data required as input argument. Data can be downloaded from link in README file.');
+end
+
 warning('off','MATLAB:handle_graphics:exceptions:SceneNode')
 
 load(fullfile(dataFolder,'simulations_synapse_dipole_orientation.mat'));

@@ -1,5 +1,9 @@
 function figure3def(dataFolder)
 
+if(nargin<1)
+    error('Path to data required as input argument. Data can be downloaded from link in README file.');
+end
+
 load(fullfile(dataFolder,'simulation_avalanches_dipole_correlations.mat'));
 clrs = clrsPT.sequential(10); clrs = clrs(5:end,:);
 

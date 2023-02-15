@@ -1,5 +1,9 @@
 function figure3b(dataFolder)
 
+if(nargin<1)
+    error('Path to data required as input argument. Data can be downloaded from link in README file.');
+end
+
 load(fullfile(dataFolder,'simulations_synapse_dipole_orientation.mat'));
 
 dMag = squeeze(max(vecnorm(dipoles,2,2)));

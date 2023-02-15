@@ -1,5 +1,9 @@
 function figure6(dataFolder)
 
+if(nargin<1)
+    error('Path to data required as input argument. Data can be downloaded from link in README file.');
+end
+
 psd = [];
 aligned = load(fullfile(dataFolder,'data_aligned_detrended.mat'));
 rescaled = load(fullfile(dataFolder,'data_rescaled_detrended.mat'));

@@ -12,7 +12,7 @@ classdef network_simulation_beluga
     end
 
     properties (Constant)
-        resourceFolder = 'E:\Research_Projects\004_Propofol\manuscript\Version3\Data';
+        resourceFolder = '';
         functionFolder = fileparts(mfilename('fullpath'));
         eiFraction = 0.85;
         eFiringRate = 0.5; % Hz
@@ -214,6 +214,10 @@ classdef network_simulation_beluga
             parentSynapses = find(multID==-1);
 
             % Load neuron segment locations projected onto sphere
+            if(~exist(obj.mTypeSegmentationData));
+                wd = mfilename('fullpath');
+                error(['Property *resourceFolder* does not point to data and needs to be changed on line 15 of file ' wd '. If you have not downloaded the data, it is accesible via the link in the README.']);
+            end
             load(obj.mTypeSegmentationData);
 
             % Embed dendrites of each postsyanptic neuron onto sphere
@@ -346,6 +350,11 @@ classdef network_simulation_beluga
                 savePath = strrep(obj.savePath,'\','/');
                 functionFolder = strrep(obj.functionFolder,'\','/');
                 postNetwork = strrep(obj.postNetwork,'\','/');
+            end
+
+            if(~exist(fullfile(obj.morphologyPath,[obj.neuronTypes{1} '.swc'])))
+                wd = mfilename('fullpath');
+                error(['Property *resourceFolder* does not point to data and needs to be changed on line 15 of file ' wd '. If you have not downloaded the data, it is accesible via the link in the README.']);
             end
 
             params = strjoin({postNetwork,obj.spikingFile,savePath,int2str(obj.tmax+100),char(string(obj.activeConductances)),num2str(obj.inSynParamChanges)});
@@ -764,7 +773,12 @@ classdef network_simulation_beluga
         end
 
         function [sa,X] = getHeadModel()
-            load(fullfile(network_simulation_beluga.resourceFolder,'anatomy_nyhead_model.mat'));
+            try
+                load(fullfile(network_simulation_beluga.resourceFolder,'anatomy_nyhead_model.mat'));
+            catch
+                wd = mfilename('fullpath');
+                error(['Could not read file. Property *resourceFolder* does not point to data and needs to be changed on line 15 of file ' wd '. If you have not downloaded the data, it is accesible via the link in the README.']);
+            end
             X = struct();
             X.vertices = sa.cortex75K.vc;
             X.faces= sa.cortex75K.tri;

@@ -1,12 +1,14 @@
 function figure1defg(dataFolder)
 
-addpath(dataFolder);
+if(nargin<1)
+    error('Path to data required as input argument. Data can be downloaded from link in README file.');
+end
 
 % function plot_unitary_spectrum_and_tau
 [sa,X] = network_simulation_beluga.getHeadModel;
 
 load(fullfile(dataFolder,'anatomy_nyhead_model.mat'));
-load(fullfile(dataFolder,'simulation_passive_different_tau_decay.mat','GABAR_tau','spectra_fitted_tau'));
+load(fullfile(dataFolder,'simulation_passive_different_tau_decay.mat'),'GABAR_tau','spectra_fitted_tau');
 load(fullfile(dataFolder,'simulation_passive_spectra.mat'))
 load(fullfile(dataFolder,'simulation_passive_EEG_variance.mat'));
 
@@ -26,7 +28,6 @@ pre(and(freq>55,freq<65),:) = nan;
 figureNB(12,6.2);
 axes('Position',[0.17,0.61,0.16,0.3]);
     plotwitherror(f,P,'Q','LineWidth',1,'color','k'); hold on;
-    % plot(f,mean(P,2),'color','k','LineWidth',1); hold on;
     ylim([10^-16.5,10^-14.5]);
     yticks([1e-16,1e-15])
     set(gca,'yscale','log');
@@ -38,7 +39,6 @@ axes('Position',[0.17,0.61,0.16,0.3]);
     xlim([1,100])
     plot(f,mean(P(1,:))*10.^synFun(f,[params(1:3),-Inf]),'--r');
     plot(f,mean(P(1,:))*10.^synFun(f,[params(1:2),-Inf,params(4)]),'--r');
-    % plot(f,mean(P(1,:))*10.^synFun(f,params),'r');
     gcaformat;
     text(1.4,2e-15,'\tau_1','FontSize',7,'color','r')
     text(1.4,9e-17,'\tau_2','FontSize',7,'color','r')

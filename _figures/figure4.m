@@ -1,5 +1,9 @@
 function figure4(dataFolder)
 
+if(nargin<1)
+    error('Path to data required as input argument. Data can be downloaded from link in README file.');
+end
+
 red = clrsPT.qualitative_CM.red*0.85;
 blue = clrsPT.qualitative_CM.blue*0.85;
 grey = clrsPT.qualitative_CM.grey*0.75;

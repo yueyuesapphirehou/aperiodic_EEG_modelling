@@ -1,5 +1,9 @@
 function figure3a(dataFolder)
 
+if(nargin<1)
+    error('Path to data required as input argument. Data can be downloaded from link in README file.');
+end
+
 network = network_simulation_beluga(pwd);
 network.branchNo = 0.98;
 % N = 30000;

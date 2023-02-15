@@ -1,5 +1,8 @@
 function figure2(dataFolder)
 
+if(nargin<1)
+    error('Path to data required as input argument. Data can be downloaded from link in README file.');
+end
 psd = [];
 % Get surface area of each triangle
 [sa,X] = network_simulation_beluga.getHeadModel;

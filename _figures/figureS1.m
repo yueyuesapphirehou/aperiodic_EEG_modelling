@@ -1,5 +1,9 @@
 function figureS1(dataFolder)
 
+if(nargin<1)
+    error('Path to data required as input argument. Data can be downloaded from link in README file.');
+end
+
 load(fullfile(dataFolder,'simulation_prenetwork_correlations.mat'));
 
 figureNB(5,5);

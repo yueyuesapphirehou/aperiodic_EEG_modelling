@@ -1,5 +1,9 @@
 function figure1b(dataFolder)
 
+if(nargin<1)
+    error('Path to data required as input argument. Data can be downloaded from link in README file.');
+end
+
 [sa,X] = network_simulation_beluga.getHeadModel;
 idcs = sa.cortex2K.in_from_cortex75K;
 czIdx = find(strcmp(sa.clab_electrodes,'Cz'));
