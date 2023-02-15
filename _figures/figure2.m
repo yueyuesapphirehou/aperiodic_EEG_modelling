@@ -1,5 +1,6 @@
 function figure2(dataFolder)
 
+psd = [];
 % Get surface area of each triangle
 [sa,X] = network_simulation_beluga.getHeadModel;
 x0 = [54,24,35];

@@ -1,5 +1,6 @@
 function figure6(dataFolder)
 
+psd = [];
 aligned = load(fullfile(dataFolder,'data_aligned_detrended.mat'));
 rescaled = load(fullfile(dataFolder,'data_rescaled_detrended.mat'));
 freq = rescaled.freq;

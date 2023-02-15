@@ -5,7 +5,7 @@ Brake N, Duc F, Rokos A, Arseneau F, Shiva Shahiri S, Khadra A and Plourde G (20
 
 The repo contains functions to reproduce all the figures in the paper. Use function set_matlab_path to set the path. Functions take the argument ***dataFolder***, which is the path to analyzed EEG data and simulations. This data can be downloaded here:  
     https://drive.google.com/uc?export=download&id=173OsShSYm1u3OX_Q96gsWXYATuHBbL0s
-
+You must also set the property ***resourceFolder*** in ./simulation_code/network_simulation_beluga.m to the the same data path.
 
 The repo also contains functions to run EEG simulations. Things that need to be compiled for simulation  
 &emsp;From the base directory, compile the C program for computing tiling correlation (requires openmp for parallel computing)  

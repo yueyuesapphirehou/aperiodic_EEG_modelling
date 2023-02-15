@@ -1,6 +1,7 @@
 function figure5(dataFolder)
 
 eeg_example = load(fullfile(dataFolder,'data_sample_time_series.mat'));
+psd = [];
 
 load(fullfile(dataFolder,'data_time_information.mat'));
 t0 = timeInfo.infusion_onset-timeInfo.object_drop;

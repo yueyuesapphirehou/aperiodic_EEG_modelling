@@ -53,7 +53,6 @@ def addsyns(nrnID,meta_data,preEI,preSpikes,propofol):
                     'weight': 0.0007, # uS
                     'record_current': False}
     IN_PARAMS = {'idx': 0,
-                    # 'e': -75,
                     'e':-80,
                     'syntype': 'Exp2Syn',
                     'tau1': 1,

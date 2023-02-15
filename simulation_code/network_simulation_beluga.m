@@ -12,8 +12,6 @@ classdef network_simulation_beluga
     end
 
     properties (Constant)
-        % resourceFolder = '/home/nbrake/data/resources';
-        % resourceFolder = 'E:/Research_Projects/004_Propofol/data/resources';
         resourceFolder = 'E:\Research_Projects\004_Propofol\manuscript\Version3\Data';
         functionFolder = fileparts(mfilename('fullpath'));
         eiFraction = 0.85;
