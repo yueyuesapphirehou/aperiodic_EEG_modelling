@@ -198,6 +198,7 @@ int computePairwiseCorrelation(int *data,int nWidth, int nHeight, char*saveFileN
                     float Pj2 = (float)Pj / (float)totalJspikes;
                     STTC = (Pi2-T_local[j])/(1-Pi2*T_local[j]) + (Pj2-T_local[i])/(1-Pj2*T_local[i]);
                     if(STTC>0.5){
+                    // if(STTC>0){
                         neuron1_local[arrayCounter][runningLength] = i;
                         neuron2_local[arrayCounter][runningLength] = j;
                         correlation_local[arrayCounter][runningLength] = STTC/2;

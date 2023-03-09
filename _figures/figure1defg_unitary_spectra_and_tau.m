@@ -43,7 +43,8 @@ axes('Position',[0.17,0.61,0.16,0.3]);
     text(1.4,2e-15,'\tau_1','FontSize',7,'color','r')
     text(1.4,9e-17,'\tau_2','FontSize',7,'color','r')
 axes('Position',[0.44,0.61,0.16,0.32]);
-    errorbar(GABAR_tau(1:end-1),mean(spectra_fitted_tau(1:end-1,:),2),std(spectra_fitted_tau(1:end-1,:),[],2),'.k','MarkerSize',7.5,'LineWidth',1)
+    % errorbar(GABAR_tau(1:end-1),mean(spectra_fitted_tau(1:end-1,:),2),std(spectra_fitted_tau(1:end-1,:),[],2),'.k','MarkerSize',7.5,'LineWidth',1)
+    plot(GABAR_tau(1:end-1),spectra_fitted_tau(1:end-1,:),'.k','MarkerSize',5);
     line([0,50],[0,50],'color','k')
     ylabel('EEG spectrum \tau_1 (ms)')
     xlim([7.5,32.5])

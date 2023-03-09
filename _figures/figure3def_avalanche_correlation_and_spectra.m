@@ -13,26 +13,29 @@ axes('Position',[0.09,0.26,0.2,0.67]);
     hold on;
     for i = 1:length(m)
         x = 1/(1-m(i));
-        y = nanmean(C_s0(i,:));
-        y_lo = icdf('normal',0.05,0,1)*stderror(C_s0(i,:)');
-        y_hi = icdf('normal',0.95,0,1)*stderror(C_s0(i,:)');
-        plot(x,y,'.','color',[0.6,0.6,0.6],'MarkerSize',10,'LineWidth',1)
-        line([x,x],[y+y_lo,y+y_hi],'color',[0.6,0.6,0.6],'linewidth',1);
+        y = C_s0(i,:)';
+        % y = nanmean(C_s0(i,:));
+        % y_lo = icdf('normal',0.05,0,1)*stderror(C_s0(i,:)');
+        % y_hi = icdf('normal',0.95,0,1)*stderror(C_s0(i,:)');
+        plot(x,y,'.','color',[0.6,0.6,0.6],'MarkerSize',5,'LineWidth',1)
+        % line([x,x],[y+y_lo,y+y_hi],'color',[0.6,0.6,0.6],'linewidth',1);
     end
     plot(1./(1-m),nanmean(C_s1,2),'color','k','LineWidth',1);
     for i = 1:length(m)
         x = 1/(1-m(i));
-        y = nanmean(C_s1(i,:));
-        y_lo = icdf('normal',0.05,0,1)*stderror(C_s1(i,:)');
-        y_hi = icdf('normal',0.95,0,1)*stderror(C_s1(i,:)');
-        plot(x,y,'.','color',clrs(i,:),'MarkerSize',10,'LineWidth',1)
-        line([x,x],[y+y_lo,y+y_hi],'color',clrs(i,:),'linewidth',1);
+        y = C_s1(i,:)';
+        % y = nanmean(C_s1(i,:));
+        % y_lo = icdf('normal',0.05,0,1)*stderror(C_s1(i,:)');
+        % y_hi = icdf('normal',0.95,0,1)*stderror(C_s1(i,:)');
+        plot(x,y,'.','color',clrs(i,:),'MarkerSize',5,'LineWidth',1)
+        % line([x,x],[y+y_lo,y+y_hi],'color',clrs(i,:),'linewidth',1);
     end
     set(gca,'xscale','log')
     xlim([1,100]);
-    ylim([-0.05,0.6])
+    % ylim([-0.05,0.6])
+    ylim([-0.1,0.65])
     xl = xlabel('Spike prop. index. (1-m)^{-1}');
-    xl.Position(2) = -0.18;
+    xl.Position(2) = -0.24;
     ylabel('Dipole correlation');
     gcaformat
     text(1.5,0.4,{'Optimized','synapses'},'FontSize',6,'VerticalAlignment','top')
@@ -95,6 +98,8 @@ axes('Position',[0.77,0.26,0.2,0.67]);
     set(gca,'xscale','log')
     set(gca,'yscale','log')
     gcaformat;
-    text(0.6,6e-14,'m = 0.98','FontSize',7)
-    text(0.67,2.3e-16,'\tau = 10 ms','FontSize',6,'color',clrs(5,:))
-    text(5.4,5e-15,'\tau = 30 ms','FontSize',6,'color',clrsPT.qualitative_CM.blue)
+    % text(0.6,6e-14,'m = 0.98','FontSize',7)
+    text(0.67,2.3e-16,sprintf('\\tau = 10 ms\n(m=0.98)'),'FontSize',6,'color',clrs(5,:))
+    text(5.4,5e-15,sprintf('\\tau = 30 ms\n(m=0.98)'),'FontSize',6,'color',clrsPT.qualitative_CM.blue)
+
+gcaformat(gcf);

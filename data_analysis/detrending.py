@@ -158,7 +158,7 @@ def main(f,p,nPeaks=3,fitType='exp2',sp_ap=list(),sp_p=list()):
     if(fitType=='exp2'):
         # lb_ap = [7e-3,0,-20,3]
         lb_ap = [7e-3,0,-20,1]
-        ub_ap = [100e-3,10e-3,10,5]
+        ub_ap = [100e-3,10e-3,10,10]
         # ub_ap = [100e-3,30e-3,10,5]
         scale_ap = [5e-3,1e-3]
         full_model = full_model_exp2

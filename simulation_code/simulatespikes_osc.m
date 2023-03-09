@@ -28,8 +28,10 @@ function [ids,ts,ei,elevation,azimuth,parents] = simulatespikes(N,tmax,offset,br
     N_in_syn = N-N_ex_syn;
 
     % Multisynapse count (predicted by Markram et al., Cell 2015)
-    N_ex_pre = ceil(N_ex_syn/3.6);
-    N_in_pre = ceil(N_in_syn/13.9);
+    % N_ex_pre = ceil(N_ex_syn/3.6);
+    % N_in_pre = ceil(N_in_syn/13.9);
+    N_ex_pre = ceil(N_ex_syn/1);
+    N_in_pre = ceil(N_in_syn/1);
 
     % Initialize
     ei = [zeros(1,N_ex_syn),ones(1,N_in_syn)];
