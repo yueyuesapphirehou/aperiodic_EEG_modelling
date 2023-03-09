@@ -157,3 +157,12 @@ function [dist_list,seriated_dist,k] = getToyModel(N)
         end
     end
 end
+function iOrder = seriation(Z,N,cur_index)
+    if cur_index <= N
+        iOrder = cur_index;
+    else
+        left = Z(cur_index-N,1);
+        right = Z(cur_index-N,2);
+        iOrder = [seriation(Z,N,left);seriation(Z,N,right)];
+    end
+end
